@@ -1,17 +1,31 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "harfiyen",
+  "name": "harfiyen-gundem",
   "main": "src/index.ts",
-  "compatibility_date": "2026-06-01",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": ["nodejs_compat"],
   "durable_objects": {
     "bindings": [{ "name": "ROOM", "class_name": "GameRoom" }]
   },
+  // Oda olusturma ve kod denemelerini hesap sinirinda tutar.
+  "ratelimits": [
+    {
+      "name": "ROOM_CREATE_LIMITER",
+      "namespace_id": "47213001",
+      "simple": { "limit": 6, "period": 60 }
+    },
+    {
+      "name": "ROOM_LOOKUP_LIMITER",
+      "namespace_id": "47213002",
+      "simple": { "limit": 60, "period": 60 }
+    }
+  ],
   // Free plan yalnızca SQLite-backed DO destekler: new_classes DEĞİL, new_sqlite_classes.
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
   // words.txt'yi metin modülü olarak import edebilmek için.
   "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
   "vars": {
-    "ALLOWED_ORIGINS": "http://localhost:5173,https://r00tmancer.github.io,https://harfiyen.r00tmancer.workers.dev"
+    "ALLOWED_ORIGINS": "http://localhost:5173,https://r00tmancer.github.io,https://harfiyen-gundem.r00tmancer.workers.dev"
   },
   "assets": { "directory": "../web/dist", "binding": "ASSETS" },
   "observability": { "enabled": true }

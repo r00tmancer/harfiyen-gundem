@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import {
   BOM_LIVES,
   JOKER_FREEZE_MS,
+  KOR_SIRALAMA_ITEMS,
   PICK_MS,
   RACE_MS,
   SUBMIT_THROTTLE_MS,
@@ -14,7 +15,7 @@ import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, REJECT_TEXT, useStore } from '../store';
 import { send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconHeartSolid, IconSnowflake, IconSwap } from '../ui/icons';
+import { IconHeartSolid, IconRanking, IconSnowflake, IconSwap } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, Stars, TimerBar, WinWash } from '../ui/parts';
 import { useRemaining, up } from '../hooks';
@@ -26,6 +27,7 @@ import { ZincirTurn } from './modes/ZincirGame';
 import { UzunRace, UzunReveal } from './modes/UzunGame';
 import { BomTurn } from './modes/BomGame';
 import { TelepatiReveal, TelepatiSoru } from './modes/TelepatiGame';
+import { KorSiralamaPick, KorSiralamaReveal } from './modes/KorSiralamaGame';
 
 // skor gostergesi moda gore: harf/uzun yildiz, sayi madalya, zincir/bom kalp, telepati ortak uyum
 function ScoreGauge({ snap, p }: { snap: RoomSnapshot; p: PlayerPublic }) {
@@ -49,12 +51,13 @@ function ScoreGauge({ snap, p }: { snap: RoomSnapshot; p: PlayerPublic }) {
 }
 
 // telepati skor bari: rekabet yok — iki avatar yan yana, arada kalp, ortak uyum sayaci
-function TelepatiScoreBar({ snap }: { snap: RoomSnapshot }) {
+function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
   const me = meOf(snap);
   const opp = oppOf(snap);
   const myIdx = me ? playerIndex(snap, me.id) : 0;
   const oppIdx = myIdx === 0 ? 1 : 0;
-  const matches = snap.telepati?.matches ?? 0;
+  const isRanking = snap.mode === 'kor_siralama';
+  const matches = isRanking ? (snap.korSiralama?.exactMatches ?? 0) : (snap.telepati?.matches ?? 0);
   const countRef = useRef<HTMLSpanElement>(null);
   const prev = useRef(matches);
 
@@ -76,7 +79,7 @@ function TelepatiScoreBar({ snap }: { snap: RoomSnapshot }) {
       <div className="flex min-w-0 items-center gap-1.5">
         {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={38} />}
         <span className="inline-flex shrink-0" style={{ color: 'var(--p1)' }} aria-hidden="true">
-          <IconHeartSolid size={20} />
+          {isRanking ? <IconRanking size={20} /> : <IconHeartSolid size={20} />}
         </span>
         {opp && (
           <Avatar
@@ -92,8 +95,8 @@ function TelepatiScoreBar({ snap }: { snap: RoomSnapshot }) {
         </p>
       </div>
       <span ref={countRef} className="chip chip-p1 font-display shrink-0 text-base">
-        <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />
-        {matches} uyum
+        {isRanking ? <IconRanking size={15} /> : <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />}
+        {matches} {isRanking ? 'aynı sıra' : 'uyum'}
       </span>
     </div>
   );
@@ -619,12 +622,20 @@ export default function Game() {
         </div>
       )}
       {/* telepati rekabet degil: vs yerine yan yana avatarlar + ortak kalp sayaci */}
-      {mode === 'telepati' ? <TelepatiScoreBar snap={snapshot} /> : <ScoreBar snap={snapshot} />}
+      {mode === 'telepati' || mode === 'kor_siralama' ? <CoopScoreBar snap={snapshot} /> : <ScoreBar snap={snapshot} />}
       <div className="flex items-center gap-2 self-center">
         <div className="chip chip-soft">
-          {mode === 'zincir' ? 'Halka' : mode === 'bom' ? 'Sayı' : mode === 'telepati' ? 'Soru' : 'Raunt'}{' '}
+          {mode === 'zincir'
+            ? 'Halka'
+            : mode === 'bom'
+              ? 'Sayı'
+              : mode === 'telepati'
+                ? 'Soru'
+                : mode === 'kor_siralama'
+                  ? 'Kart'
+                  : 'Raunt'}{' '}
           {snapshot.round}
-          {mode === 'telepati' ? `/${TELEPATI_QUESTIONS}` : ''}
+          {mode === 'telepati' ? `/${TELEPATI_QUESTIONS}` : mode === 'kor_siralama' ? `/${KOR_SIRALAMA_ITEMS}` : ''}
         </div>
         <div className="chip" style={{ background: 'color-mix(in srgb, var(--grape) 22%, #fff)' }}>
           {MODE_META[mode].name}
@@ -640,6 +651,8 @@ export default function Game() {
       {snapshot.phase === 'uzun_race' && <UzunRace snap={snapshot} />}
       {snapshot.phase === 'telepati_soru' && <TelepatiSoru snap={snapshot} />}
       {snapshot.phase === 'telepati_reveal' && <TelepatiReveal snap={snapshot} />}
+      {snapshot.phase === 'kor_sirala' && <KorSiralamaPick snap={snapshot} />}
+      {snapshot.phase === 'kor_reveal' && <KorSiralamaReveal snap={snapshot} />}
       {snapshot.phase === 'round_end' &&
         (mode === 'sayi' ? (
           <SayiRoundEnd snap={snapshot} />

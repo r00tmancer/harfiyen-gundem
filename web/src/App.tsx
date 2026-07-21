@@ -20,7 +20,7 @@ export default function App() {
   const screen = useStore((s) => s.screen);
   return (
     <>
-      <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-4">
+      <main className="app-shell mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-4">
         {screen === 'home' && <Home />}
         {screen === 'lobby' && <Lobby />}
         {screen === 'game' && <Game />}

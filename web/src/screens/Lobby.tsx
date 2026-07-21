@@ -66,8 +66,11 @@ function ModePicker({ snap }: { snap: RoomSnapshot }) {
               aria-pressed={sel}
               onClick={() => pick(m)}
             >
-              <span className="mode-icon" aria-hidden="true">
-                <meta.Icon size={26} />
+              <span className="flex w-full items-start justify-between gap-1">
+                <span className="mode-icon" aria-hidden="true">
+                  <meta.Icon size={26} />
+                </span>
+                {meta.badge && <span className="mode-badge">{meta.badge}</span>}
               </span>
               <span className="mode-name">{meta.name}</span>
               <span className="mode-desc">{meta.desc}</span>

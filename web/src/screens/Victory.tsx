@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { BOM_LIVES, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import { BOM_LIVES, KOR_SIRALAMA_ITEMS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
 import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconHeartSolid, IconShare } from '../ui/icons';
+import { IconHeartSolid, IconRanking, IconShare } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
 import { heartRain, paletteFor, rain } from '../fx/confetti';
 import { haptics } from '../fx/haptics';
 import { up } from '../hooks';
+import { createKorShareCard } from '../share/korSiralamaCard';
+import { PUBLIC_URL } from '../config';
 
-const GAME_URL = 'https://harfiyen.r00tmancer.workers.dev';
+const GAME_URL = PUBLIC_URL;
 
 // kupa: sun dolgulu, ink konturlu buyuk SVG
 function Trophy({ size = 120 }: { size?: number }) {
@@ -87,10 +89,18 @@ function isKoopTelepati(snap: RoomSnapshot): boolean {
   return snap.mode === 'telepati' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopKorSiralama(snap: RoomSnapshot): boolean {
+  return snap.mode === 'kor_siralama' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
   return Math.round((matches / TELEPATI_QUESTIONS) * 100);
+}
+
+function korSiralamaPct(snap: RoomSnapshot): number {
+  return snap.korSiralama?.compatibility ?? 0;
 }
 
 function uyumTitle(pct: number): string {
@@ -98,6 +108,35 @@ function uyumTitle(pct: number): string {
   if (pct >= 70) return 'Kalpler aynı atıyor';
   if (pct >= 50) return 'Fena değil, gelişiyorsunuz';
   return 'Zıt kutuplar çeker derler...';
+}
+
+function RankingResult({
+  player,
+  idx,
+  ranking,
+  mine,
+}: {
+  player: PlayerPublic;
+  idx: 0 | 1;
+  ranking: readonly string[];
+  mine: boolean;
+}) {
+  return (
+    <div className="card-candy flex min-w-0 flex-1 flex-col gap-2 p-3!" style={{ background: PLAYER_CSS[idx].soft }}>
+      <div className="flex min-w-0 items-center gap-2">
+        <Avatar index={player.avatar} color={PLAYER_CSS[idx].main} size={34} />
+        <p className="font-display min-w-0 truncate text-[13px] font-extrabold">{mine ? 'Sen' : player.nick}</p>
+      </div>
+      <ol className="flex flex-col gap-1.5 text-left">
+        {ranking.map((item, index) => (
+          <li key={`${item}-${index}`} className="ranking-result-item">
+            <span>{index + 1}</span>
+            <p>{item}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
 // paylasim skoru: zincir/bom kalan can, sayi raund, digerleri puan
@@ -110,37 +149,72 @@ function scorelineOf(snap: RoomSnapshot): string {
   return `${mine}-${theirs}`;
 }
 
-// paylas: varsa yerli paylasim menusu, yoksa panoya kopyala + rozet
-function ShareButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+// Paylas: moda ozel PNG varsa iPhone share sheet'e dosya olarak verir; destek
+// yoksa gorseli indirir ve metni panoya kopyalar. Diger modlar metinle devam eder.
+function ShareButton({ text, makeFile }: { text: string; makeFile?: () => Promise<File> }) {
+  const [status, setStatus] = useState<'copied' | 'downloaded' | 'error' | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function share() {
-    if (typeof navigator.share === 'function') {
+    if (busy) return;
+    setBusy(true);
+    setStatus(null);
+    let file: File | null = null;
+    if (makeFile) {
       try {
-        await navigator.share({ text });
+        file = await makeFile();
       } catch {
-        // kullanici vazgecti
+        // Gorsel uretilmezse metin paylasimina geri dusulur.
       }
-      return;
     }
+
     try {
+      if (
+        file &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({ title: 'Kör Sıralama Sonucu', text, files: [file] });
+        return;
+      }
+      if (typeof navigator.share === 'function' && !file) {
+        await navigator.share({ text });
+        return;
+      }
+
+      if (file) {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // pano izni yok: sessiz gec
+      setStatus(file ? 'downloaded' : 'copied');
+      window.setTimeout(() => setStatus(null), 2400);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setStatus('error');
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <button type="button" className="btn-candy btn-block" onClick={() => void share()}>
+      <button type="button" className="btn-candy btn-block" disabled={busy} onClick={() => void share()}>
         <IconShare />
-        Paylaş
+        {busy ? 'Hazırlanıyor...' : makeFile ? 'Story görselini paylaş' : 'Paylaş'}
       </button>
-      {copied && (
+      {status && (
         <span className="chip chip-ok" role="status">
-          Kopyalandı!
+          {status === 'downloaded'
+            ? 'Görsel indirildi, metin kopyalandı!'
+            : status === 'copied'
+              ? 'Kopyalandı!'
+              : 'Paylaşım hazırlanamadı'}
         </span>
       )}
     </div>
@@ -171,11 +245,12 @@ export default function Victory() {
   useEffect(() => {
     // matchEndSeq 0 ise mac sonu mesaji bu oturumda gelmedi (sayfa yenileme) — kutlama yok
     if (!snapshot || matchEndSeq === 0 || matchEndSeq === celebratedSeq) return;
-    // ko-op telepati: kazanan yok, yuksek uyumda kalp yagmuru
-    if (isKoopTelepati(snapshot)) {
+    // ko-op modlar: kazanan yok, yuksek uyumda kalp yagmuru
+    if (isKoopTelepati(snapshot) || isKoopKorSiralama(snapshot)) {
       celebratedSeq = matchEndSeq;
       haptics.victory();
-      if (telepatiPct(snapshot) >= 70) heartRain();
+      const pct = isKoopTelepati(snapshot) ? telepatiPct(snapshot) : korSiralamaPct(snapshot);
+      if (pct >= 70) heartRain();
       return;
     }
     if (!winner) return;
@@ -196,9 +271,25 @@ export default function Victory() {
   // paylasim metni: kazanan/kaybeden perspektifi; telepati ortak uyum yuzdesi
   const shareMsg = isKoopTelepati(snapshot)
     ? `Telepati testinde uyumumuz %${telepatiPct(snapshot)} çıktı! Siz de deneyin: ${GAME_URL}`
+    : isKoopKorSiralama(snapshot)
+      ? `Kör Sıralama'da listelerimiz %${korSiralamaPct(snapshot)} uydu! Siz de geleceği görmeden sıralayın: ${GAME_URL}`
     : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
+
+  const kor = snapshot.korSiralama;
+  const makeKorShareFile =
+    isKoopKorSiralama(snapshot) && me && opp && kor?.finalRankings
+      ? () =>
+          createKorShareCard({
+            topic: kor.topic,
+            pct: kor.compatibility ?? 0,
+            exactMatches: kor.exactMatches,
+            url: GAME_URL,
+            playerA: { name: me.nick, ranking: kor.finalRankings?.[me.id] ?? [] },
+            playerB: { name: opp.nick, ranking: kor.finalRankings?.[opp.id] ?? [] },
+          })
+      : undefined;
 
   // rovans/paylas/yeni oda + durum rozetleri: iki varyantta da ayni
   const footer = (
@@ -226,7 +317,7 @@ export default function Victory() {
           {mineWant ? `Rövanş istendi (${rematchWants.length}/2)` : 'Rövanş'}
         </button>
         {/* ikincil aksiyon: rovansin altinda */}
-        <ShareButton text={shareMsg} />
+        <ShareButton text={shareMsg} makeFile={makeKorShareFile} />
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
         </button>
@@ -282,6 +373,66 @@ export default function Victory() {
           </p>
         </div>
 
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op kor siralama: iki tam liste + ortak uyum ----
+  if (isKoopKorSiralama(snapshot)) {
+    const k = snapshot.korSiralama;
+    const pct = korSiralamaPct(snapshot);
+    const myRanking = me ? (k?.finalRankings?.[me.id] ?? []) : [];
+    const oppRanking = opp ? (k?.finalRankings?.[opp.id] ?? []) : [];
+    return (
+      <div ref={root} className="flex w-full flex-col items-center gap-5 pt-8 pb-6 text-center">
+        <WinWash mine={false} />
+
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="inline-flex" style={{ color: 'var(--grape)' }} aria-hidden="true">
+            <IconRanking size={38} />
+          </span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <h1 data-pop className="font-display text-4xl font-extrabold">
+          Listeler Açıldı!
+        </h1>
+        <div data-pop className="chip chip-soft">
+          {MODE_META.kor_siralama.name} · {k?.topic ?? 'Sürpriz konu'}
+        </div>
+
+        <div data-pop className="card-candy w-full text-center">
+          <p className="uyum-pct" aria-label={`Yüzde ${pct} sıralama uyumu`}>
+            %{pct}
+          </p>
+          <p className="mt-1 font-display text-2xl font-extrabold" style={{ color: 'var(--p1-dark)' }}>
+            {uyumTitle(pct)}
+          </p>
+          <p className="mt-3 flex items-center justify-center">
+            <span className="chip chip-p1 font-display text-sm">
+              <IconHeartSolid size={14} style={{ color: 'var(--p1-dark)' }} />
+              {k?.exactMatches ?? 0}/{KOR_SIRALAMA_ITEMS} tam sıra
+            </span>
+          </p>
+        </div>
+
+        <div data-pop className="flex w-full items-stretch gap-2">
+          {me && <RankingResult player={me} idx={myIdx} ranking={myRanking} mine />}
+          {opp && <RankingResult player={opp} idx={oppIdx} ranking={oppRanking} mine={false} />}
+        </div>
+
+        <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
+          1 favori · 5 en sona
+        </p>
         {footer}
       </div>
     );

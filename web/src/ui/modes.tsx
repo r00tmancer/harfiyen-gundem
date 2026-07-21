@@ -1,15 +1,16 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconHeartsDuo, IconRuler, IconTarget, IconTilesDuo } from './icons';
+import { IconBomb, IconBurst, IconHeartsDuo, IconRanking, IconRuler, IconTarget, IconTilesDuo } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['harf', 'sayi', 'zincir', 'uzun', 'bom', 'telepati'];
+export const MODE_ORDER: GameMode[] = ['kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
   desc: string;
   joker: string;
+  badge?: string;
   Icon: ComponentType<{ size?: number } & SVGProps<SVGSVGElement>>;
 }
 
@@ -49,5 +50,12 @@ export const MODE_META: Record<GameMode, ModeMeta> = {
     desc: 'Aynı soruya gizlice cevap verin — uyuşursa puan!',
     joker: 'Joker: Çifte Kalp — o soru 2 puan',
     Icon: IconHeartsDuo,
+  },
+  kor_siralama: {
+    name: 'Kör Sıralama',
+    desc: 'Gelecek kartları bilmeden seçenekleri 1-5 arasına kilitleyin.',
+    joker: 'Joker: Pas — bu kartı destenin sonuna at',
+    badge: 'YENİ · 1 DK',
+    Icon: IconRanking,
   },
 };

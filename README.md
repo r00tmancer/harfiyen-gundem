@@ -1,8 +1,16 @@
 # Harfiyen
 
-1v1 gerçek zamanlı Türkçe kelime düellosu. İki oyuncu birer harf seçer; seçilen harflerden biriyle başlayıp diğeriyle biten, TDK sözlüğünde bulunan bir kelimeyi ilk yazan puanı alır. 5 puana ulaşan maçı kazanır.
+İki telefondan oynanan, gerçek zamanlı Türkçe mini oyunlar. Bir oda kur, linki sevgiline veya arkadaşına gönder ve aynı anda oynamaya başla.
 
-- **İstemci**: Vite + React + TypeScript, GitHub Pages üzerinde statik.
+**[Canlı oyna](https://harfiyen-gundem.r00tmancer.workers.dev)**
+
+## Oyunlar
+
+- **Kör Sıralama — yeni:** Beş sürpriz seçenek tek tek gelir. Geleceği bilmeden 1–5 arasına kilitleyin; listeler açılınca uyum yüzdesini Story görseli olarak paylaşın.
+- **Telepati:** Aynı sorulara gizlice cevap verip ortak uyumu ölçün.
+- **Harf Yarışı, Sayı Avı, Kelime Zinciri, En Uzun Kelime ve Bom:** Rekabetçi kısa oyunlar.
+
+- **İstemci**: Vite + React + TypeScript; Cloudflare Worker assets veya GitHub Pages üzerinde statik.
 - **Sunucu**: Cloudflare Worker + Durable Object (oda başına bir nesne), WebSocket Hibernation.
 - **Kelime doğrulama**: TDK Güncel Türkçe Sözlük'ten türetilmiş ~62 bin kelimelik gömülü liste — çevrimdışı, deterministik, <1 ms.
 
@@ -17,8 +25,10 @@ npm run dev:web       # http://localhost:5173
 
 ## Dağıtım
 
-- Worker: `npm run deploy:worker`
-- Web: `main`'e push → GitHub Actions → GitHub Pages
+- Cloudflare (Worker + Durable Object + web assets): `npm run deploy`
+- GitHub Pages: `main`'e push → test/typecheck/build → `gh-pages`
+
+Varsayılan web base yolu Cloudflare için `/` olur. GitHub Pages workflow'u yeni repo adını otomatik olarak `VITE_BASE_PATH` üzerinden ayarlar.
 
 ## Veri kaynakları ve atıflar
 

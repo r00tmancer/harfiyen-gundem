@@ -16,15 +16,24 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - name: Wrangler binding tiplerini doğrula
+        run: npm exec -w worker wrangler -- types src/worker-configuration.d.ts --include-runtime false --check
+      - name: Cloudflare API adresini doğrula
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: test -n "$API_URL"
       - run: npm run build -w web
         env:
-          # Worker adresi: gh variable set API_URL --body "https://harfiyen.<hesap>.workers.dev"
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          # Worker adresi: gh variable set API_URL --body "https://harfiyen-gundem.<hesap>.workers.dev"
           VITE_API_URL: ${{ vars.API_URL }}
       - name: gh-pages dalına yayınla
         run: |

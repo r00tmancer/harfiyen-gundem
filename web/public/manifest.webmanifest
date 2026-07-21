@@ -1,7 +1,7 @@
 {
   "name": "Harfiyen",
   "short_name": "Harfiyen",
-  "description": "1v1 gerçek zamanlı Türkçe kelime düellosu",
+  "description": "İki telefondan oynanan hızlı Türkçe parti ve çift oyunları",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

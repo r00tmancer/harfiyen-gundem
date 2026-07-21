@@ -211,6 +211,18 @@ export function IconHeartsDuo({ size = 22, ...props }: { size?: number } & SVGPr
   );
 }
 
+// numarali liste kartlari: kor siralama modu
+export function IconRanking({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <path d="M4 6.2h2.2M5.1 4.8v4.1M4 12h2.2l-2.1 2.4h2.3M4 18h2.4l-1.3-1.5 1.3-1.5" strokeWidth={1.9} />
+      <rect x="9" y="3.5" width="11.5" height="4.7" rx="1.8" fill="currentColor" fillOpacity={0.2} />
+      <rect x="9" y="9.7" width="8.8" height="4.7" rx="1.8" />
+      <rect x="9" y="15.9" width="6.3" height="4.7" rx="1.8" fill="currentColor" fillOpacity={0.2} />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

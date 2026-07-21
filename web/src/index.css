@@ -41,6 +41,13 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* iPhone notch ve home indicator: 1rem temel bosluk, daha buyukse safe area kazanir */
+.app-shell {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 .font-display {
   font-family: var(--font-display);
 }
@@ -85,11 +92,11 @@ body {
   outline: 3px solid var(--grape);
   outline-offset: 2px;
 }
-.btn-p1 { background: var(--p1); color: #fff; }
-.btn-p2 { background: var(--p2); color: #fff; }
+.btn-p1 { background: var(--p1); color: var(--ink); }
+.btn-p2 { background: var(--p2); color: var(--ink); }
 .btn-sun { background: var(--sun); }
-.btn-mint { background: var(--mint); color: #fff; }
-.btn-grape { background: var(--grape); color: #fff; }
+.btn-mint { background: var(--mint); color: var(--ink); }
+.btn-grape { background: var(--grape); color: var(--ink); }
 .btn-block { width: 100%; }
 .btn-lg { min-height: 60px; font-size: 21px; border-radius: 20px; }
 
@@ -500,6 +507,22 @@ body {
 }
 .mode-card:focus-visible { outline: 3px solid var(--grape); outline-offset: 2px; }
 .mode-icon { color: var(--ink); display: inline-flex; }
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transform: rotate(2deg);
+}
 .mode-name { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 1.15; }
 .mode-desc { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.3; }
 .mode-card.sel .mode-desc { color: var(--ink); }
@@ -829,6 +852,107 @@ body {
   text-shadow: 0 7px 0 var(--shadow-ink);
 }
 
+/* ---- kor siralama: tek kart + kilitli 1-5 listesi ---- */
+.kor-current {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 14px 18px;
+  background: color-mix(in srgb, var(--sun) 25%, var(--card));
+}
+.rank-slot {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 7px;
+  border: 2.5px solid var(--ink);
+  border-radius: 15px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--shadow-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 90ms ease, box-shadow 90ms ease, background 130ms ease;
+}
+.rank-slot.open:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow-ink); }
+.rank-slot:disabled { cursor: default; }
+.rank-slot.filled { background: color-mix(in srgb, var(--p2-soft) 52%, var(--card)); }
+.rank-slot.selected {
+  background: var(--sun);
+  border-color: var(--ink);
+  transform: scale(1.015) rotate(-0.5deg);
+}
+.rank-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 2.5px solid var(--ink);
+  border-radius: 11px;
+  background: var(--card);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1;
+}
+.rank-hint {
+  flex: 0 0 auto;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 800;
+}
+.rank-reveal-number {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  background: var(--sun);
+  box-shadow: 0 5px 0 var(--shadow-ink);
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+.kor-reveal-item { padding: 16px; background: color-mix(in srgb, var(--sun) 25%, var(--card)); }
+.ranking-result-item {
+  display: grid;
+  min-height: 40px;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border: 2px solid color-mix(in srgb, var(--ink) 72%, transparent);
+  border-radius: 10px;
+  background: var(--card);
+}
+.ranking-result-item > span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--sun);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+}
+.ranking-result-item > p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
 /* ---- titresim ayari: mini candy toggle ---- */
 .toggle-candy {
   position: relative;
@@ -863,7 +987,7 @@ body {
 .react-fab {
   position: fixed;
   right: max(14px, calc(50% - 226px));
-  bottom: 18px;
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 8px));
   z-index: 55;
   width: 54px;
   height: 54px;
@@ -918,7 +1042,7 @@ body {
 .react-tray {
   position: fixed;
   right: max(14px, calc(50% - 226px));
-  bottom: 82px;
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 72px));
   z-index: 56;
   display: grid;
   grid-template-columns: repeat(3, 1fr);

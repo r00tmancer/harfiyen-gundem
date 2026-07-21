@@ -1,10 +1,11 @@
 // GameRoom kalici durum modelleri ve mod isleyicilerinin kullandigi baglam arayuzu.
 // Sunucu tarafi durum, snapshot'tan AYRIDIR: gizli bilgiler (sayi sirlari) burada tutulur,
 // snapshot'a asla sizmaz (round_end aralik-daraltma acilimi haric).
-import type { GameMode, Phase, ServerMsg, TelepatiQuestion } from '@harfiyen/shared';
+import type { GameMode, KorSiralamaPack, Phase, ServerMsg, TelepatiQuestion } from '@harfiyen/shared';
 
 export interface PlayerState {
-  id: string;
+  id: string; // herkese acik, oda icinde sabit oyuncu kimligi
+  reconnectHash: string; // SHA-256; secret ve hash snapshot/event'lere asla girmez
   nick: string;
   avatar: number;
   score: number;
@@ -52,6 +53,18 @@ export interface TelepatiServer {
   doubled: boolean; // bu soruda cifte kalp aktif mi
 }
 
+// Kor Siralama: placements ve o anki answers mac sonuna/reveal'e kadar sunucuda tutulur.
+// Her placements dizisinin indeksi sirayi (0..4), degeri o yuvaya kilitlenen karti temsil eder.
+export interface KorSiralamaServer {
+  pack: KorSiralamaPack;
+  itemIndex: number; // sunucuda 0 tabanli
+  placements: Record<string, Array<string | null>>;
+  answers: Record<string, number>; // pid -> 1..5 (mevcut kart)
+  lastSlots: Record<string, number> | null;
+  exactMatches: number;
+  compatibility: number | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -81,6 +94,7 @@ export interface RoomState {
   uzun: UzunServer | null;
   bom: BomServer | null;
   telepati: TelepatiServer | null;
+  korSiralama: KorSiralamaServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

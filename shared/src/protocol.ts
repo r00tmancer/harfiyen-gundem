@@ -16,13 +16,18 @@ export const JOKER_FREEZE_MS = 5_000; // buz jokeri: rakibin yazma alanı bu kad
 export const JOKER_PER_ROUNDS = 5; // her 5 raundluk blok için 1 joker hakkı (1. ve 6. raundda dolar)
 
 // ---- Oyun modları ----
-export type GameMode = 'harf' | 'sayi' | 'zincir' | 'uzun' | 'bom' | 'telepati';
+export type GameMode = 'harf' | 'sayi' | 'zincir' | 'uzun' | 'bom' | 'telepati' | 'kor_siralama';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
 export const TELEPATI_QUESTIONS = 10; // maç başına soru
 export const TELEPATI_ANSWER_MS = 15_000;
 export const TELEPATI_REVEAL_MS = 3_500;
+
+// Kor Siralama — secenekler tek tek gelir; gelecegi bilmeden 1-5 arasina kilitlenir
+export const KOR_SIRALAMA_ITEMS = 5;
+export const KOR_SIRALAMA_PICK_MS = 20_000;
+export const KOR_SIRALAMA_REVEAL_MS = 3_200;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -69,6 +74,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind> = {
   uzun: 'cifte_sans',
   bom: 'sigorta', // bir sonraki hatanı affeder (can gitmez)
   telepati: 'cifte_kalp', // bu soru eşleşirse 2 puan sayılır
+  kor_siralama: 'pas', // mevcut karti sona atar; siradaki kart bilinmez
 };
 
 export const TR_LETTERS = [
@@ -114,6 +120,8 @@ export type Phase =
   | 'bom_turn' // (bom) sıradaki oyuncu sayıya ya da BOM'a basıyor
   | 'telepati_soru' // (telepati) iki oyuncu da gizlice cevaplıyor
   | 'telepati_reveal' // (telepati) cevaplar açıldı, eşleşme gösteriliyor
+  | 'kor_sirala' // (kor siralama) mevcut kart bos bir 1-5 yuvasina kilitleniyor
+  | 'kor_reveal' // (kor siralama) iki oyuncunun bu karttaki sirasi aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -161,6 +169,26 @@ export interface TelepatiState {
   doubled: boolean; // bu soruda çifte kalp aktif mi
 }
 
+export interface KorSiralamaPack {
+  topic: string;
+  prompt: string;
+  items: string[];
+}
+
+export interface KorSiralamaState {
+  topic: string;
+  prompt: string;
+  itemIndex: number; // 1..KOR_SIRALAMA_ITEMS
+  currentItem: string;
+  mySlots: Array<string | null>; // yalniz alicinin kendi kilitli listesi
+  myRanked: boolean;
+  oppRanked: boolean;
+  exactMatches: number; // ayni karti ayni siraya koyma sayisi
+  lastSlots: Record<string, number> | null; // reveal sirasinda pid -> 1..5
+  compatibility: number | null; // yalniz mac sonunda 0..100
+  finalRankings: Record<string, string[]> | null; // yalniz mac sonunda iki liste
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -190,6 +218,7 @@ export interface RoomSnapshot {
   uzun: UzunState | null;
   bom: BomState | null;
   telepati: TelepatiState | null;
+  korSiralama: KorSiralamaState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -202,6 +231,8 @@ export type ClientMsg =
   | { t: 'guess'; value: number } // (sayi) sıradaki tahmin
   | { t: 'bom_press'; kind: 'number' | 'bom' } // (bom) sıradaki oyuncunun seçimi
   | { t: 'telepati_answer'; choice: 'a' | 'b' | 'ben' | 'o' } // (telepati) gizli cevap
+  | { t: 'kor_rank'; slot: number; itemIndex: number; item: string } // stale kart hamlesi sunucuda reddedilir
+  | { t: 'kor_pass'; itemIndex: number; item: string } // (kor siralama) gorulen karti sona at
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };
@@ -278,5 +309,6 @@ export type ServerMsg =
 // ---- REST ----
 // POST /api/rooms                 -> { code: string }
 // GET  /api/rooms/:code           -> { exists: boolean, joinable: boolean }
-// WS   /ws/:code?nick=..&avatar=..&pid=..   (pid: istemcinin localStorage'da sakladığı kalıcı uuid;
-//                                            kopan bağlantıda aynı pid ile yeniden katılım sağlar)
+// WS   /ws/:code?nick=..&avatar=..
+//      Sec-WebSocket-Protocol: harfiyen.v2, harfiyen.auth.<16-byte-base64url-secret>
+//      Secret oda bazli localStorage'da tutulur; URL/payload/snapshot'a girmez.

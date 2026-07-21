@@ -1,0 +1,127 @@
+[
+  {
+    "topic": "Gece kaçamağı",
+    "prompt": "Şu an birlikte hangisini yapmak isterdin?",
+    "items": ["Sahilde gün doğumunu beklemek", "Gece açık büfeye gitmek", "Arabada yıldızları izlemek", "Sessiz sokaklarda yürümek", "Plansız mini yolculuk"]
+  },
+  {
+    "topic": "Randevu planı",
+    "prompt": "En güzel buluşma hangisi olurdu?",
+    "items": ["Birlikte seramik yapmak", "Açık hava sineması", "Gizli piknik hazırlamak", "Yeni bir semt keşfetmek", "Evde temalı yemek gecesi"]
+  },
+  {
+    "topic": "Gece atıştırması",
+    "prompt": "Gece acıkınca ilk hangisine uzanırsın?",
+    "items": ["Çıtır patates", "Çikolatalı tatlı", "Tost", "Meyve tabağı", "Baharatlı noodle"]
+  },
+  {
+    "topic": "Kahvaltı masası",
+    "prompt": "Kusursuz kahvaltıda hangisi öne çıkar?",
+    "items": ["Sıcacık börek", "Menemen", "Pankek", "Simit ve peynir", "Kruvasan ve kahve"]
+  },
+  {
+    "topic": "Tatil modu",
+    "prompt": "Birlikte çıkacağınız tatilde hangisi favorin?",
+    "items": ["Deniz kenarı bungalov", "Karlı dağ evi", "Kalabalık şehir turu", "Karavan yolculuğu", "Ormanda kamp"]
+  },
+  {
+    "topic": "Evde bir gece",
+    "prompt": "Evde kalınca hangisini seçersin?",
+    "items": ["Battaniye altında film", "Birlikte yemek yapmak", "İki kişilik oyun turnuvası", "Eski fotoğraflara bakmak", "Müzik açıp sohbet etmek"]
+  },
+  {
+    "topic": "Süper güç",
+    "prompt": "İkinize tek bir güç verilse hangisi olsun?",
+    "items": ["Işınlanmak", "Zamanı durdurmak", "Düşünce okumak", "Görünmez olmak", "Uçmak"]
+  },
+  {
+    "topic": "Ortak evcil dost",
+    "prompt": "Birlikte hangisine bakmak isterdin?",
+    "items": ["Uykucu kedi", "Enerjik köpek", "Konuşkan papağan", "Minik tavşan", "Sakin kaplumbağa"]
+  },
+  {
+    "topic": "Yolculuk görevi",
+    "prompt": "Uzun yolda hangisi sana düşsün?",
+    "items": ["Müzikleri seçmek", "Atıştırmaları yönetmek", "Rotayı bulmak", "Fotoğraf çekmek", "Sürücüyü güldürmek"]
+  },
+  {
+    "topic": "Issız ada çantası",
+    "prompt": "Yanına yalnızca biri alınacak olsa?",
+    "items": ["Dev bir su matarası", "Çok amaçlı çakı", "Güneş enerjili telefon", "Sıcacık battaniye", "Bitmeyen atıştırma kutusu"]
+  },
+  {
+    "topic": "Uzay randevusu",
+    "prompt": "Galakside ilk hangisini denemek isterdin?",
+    "items": ["Ay'da piknik", "Satürn halkalarında tur", "Sıfır yerçekiminde dans", "Meteor yağmuru seyri", "Uzay istasyonunda kahvaltı"]
+  },
+  {
+    "topic": "Uzay mutfağı",
+    "prompt": "Galaktik menüde hangisini sipariş edersin?",
+    "items": ["Nebula noodle", "Ay taşı kurabiyesi", "Meteor köftesi", "Kozmik pizza", "Yıldız tozu dondurması"]
+  },
+  {
+    "topic": "Hayalinizdeki ev",
+    "prompt": "Evde en vazgeçilmez köşe hangisi?",
+    "items": ["Dev sinema odası", "Güneşli balkon", "Oyun odası", "Geniş mutfak", "Kitaplarla dolu sessiz oda"]
+  },
+  {
+    "topic": "Sürpriz hediye",
+    "prompt": "Seni en çok hangisi mutlu eder?",
+    "items": ["El yazısı uzun mektup", "Habersiz hafta sonu bileti", "Birlikte çekilmiş fotoğraf albümü", "Uzun zamandır istediğin bir şey", "Evde hazırlanmış özel akşam"]
+  },
+  {
+    "topic": "Minik ilişki ritüeli",
+    "prompt": "Her gün hangisini birlikte yapmak isterdin?",
+    "items": ["Uyumadan günün özetini anlatmak", "Sabah kahvesini paylaşmak", "Bir şarkı göndermek", "Akşam kısa yürüyüşe çıkmak", "Günün komik anını seçmek"]
+  },
+  {
+    "topic": "Tembel pazar",
+    "prompt": "Boş bir pazar gününde ilk tercih?",
+    "items": ["Öğlene kadar uyumak", "Uzun kahvaltı", "Pazarda dolaşmak", "Dizi maratonu", "Plansız dışarı çıkmak"]
+  },
+  {
+    "topic": "Hava seçimi",
+    "prompt": "Birlikte vakit geçirmek için en güzel hava?",
+    "items": ["Pencerede yağmur sesi", "Kar yağışı", "Serin bahar güneşi", "Sıcak yaz akşamı", "Rüzgârlı sonbahar"]
+  },
+  {
+    "topic": "Pizza masası",
+    "prompt": "Ortak pizzada hangisi kesin olsun?",
+    "items": ["Bol peynir", "Acı biber", "Mantar", "Sucuk", "Zeytin"]
+  },
+  {
+    "topic": "Tatlı krizi",
+    "prompt": "İkiniz bir tatlı paylaşacak olsanız?",
+    "items": ["Sufle", "Cheesecake", "Baklava", "Dondurma", "Tiramisu"]
+  },
+  {
+    "topic": "Festival günü",
+    "prompt": "Birlikte hangi etkinliğe ışınlanalım?",
+    "items": ["Sokak lezzetleri festivali", "Açık hava konseri", "Kitap fuarı", "Işık festivali", "Oyun ve teknoloji fuarı"]
+  },
+  {
+    "topic": "Kaybedenin cezası",
+    "prompt": "Tatlı bir oyun cezası olarak hangisi?",
+    "items": ["Komik bir dans yapmak", "Kahvaltıyı hazırlamak", "Çocukluk fotoğrafı paylaşmak", "Bir dakika boyunca şarkı söylemek", "Kazanana masaj yapmak"]
+  },
+  {
+    "topic": "Film gecesi",
+    "prompt": "Bu gece hangi tür açılsın?",
+    "items": ["Romantik komedi", "Gerilim", "Bilim kurgu", "Animasyon", "Gizem"]
+  },
+  {
+    "topic": "Çocukluk nostaljisi",
+    "prompt": "Bir akşam hangisine geri dönmek isterdin?",
+    "items": ["Mahallede saklambaç", "Çizgi film sabahı", "Okul gezisi", "Bayram şekeri toplamak", "Atari salonu"]
+  },
+  {
+    "topic": "Gelecekten bir sahne",
+    "prompt": "Birlikte geleceğinizden hangisini görmek isterdin?",
+    "items": ["İlk ortak eviniz", "Unutulmaz bir yolculuk", "Yaşlı hâlinizle bir sabah", "Birlikte başardığınız büyük hedef", "Yıllar sonra aynı şakaya gülüşünüz"]
+  },
+  {
+    "topic": "Plansız macera",
+    "prompt": "Kapıdan çıkınca kura hangisini seçsin?",
+    "items": ["İlk otobüse binmek", "Haritada rastgele nokta seçmek", "Hiç denemediğiniz yemek söylemek", "Turist gibi kendi şehrinizi gezmek", "Gün batımını yakalamaya çalışmak"]
+  }
+]

@@ -1,5 +1,4 @@
 // Harfiyen worker girisi: REST + WS yonlendirme, origin allowlist.
-import type { Env } from './env';
 
 export { GameRoom } from './room';
 
@@ -8,9 +7,38 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPRSTUVYZ23456789';
 const CODE_LEN = 5;
 const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{${CODE_LEN}}$`);
 const MAX_CODE_TRIES = 5;
+const RATE_TOKEN_RE = /^[A-Za-z0-9_-]{22}$/;
+const WS_AUTH_PROTOCOL_PREFIX = 'harfiyen.auth.';
+
+function clientRateKey(request: Request): string {
+  // Normal istemciyi kalici ama yetki vermeyen cihaz anahtariyla sinirla. WS'de
+  // oda secret'i yalniz rate-limit anahtari olur; URL'ye ya da loga yazilmaz.
+  const clientId = request.headers.get('X-Harfiyen-Client')?.trim() ?? '';
+  if (RATE_TOKEN_RE.test(clientId)) return `client:${clientId}`;
+
+  const protocols = request.headers.get('Sec-WebSocket-Protocol')?.split(',').map((p) => p.trim()) ?? [];
+  const auth = protocols.find((p) => p.startsWith(WS_AUTH_PROTOCOL_PREFIX));
+  const secret = auth?.slice(WS_AUTH_PROTOCOL_PREFIX.length) ?? '';
+  if (RATE_TOKEN_RE.test(secret)) return `ws:${secret}`;
+
+  // Eski/bozuk istemciler icin son kapı; normal trafikte ortak mobil IP'ler bu
+  // kola dusmez. `local` Wrangler geliştirmesinde deterministiktir.
+  return `network:${request.headers.get('CF-Connecting-IP')?.trim() || 'local'}`;
+}
+
+function tooManyRequests(): Response {
+  return Response.json(
+    { error: 'cok_fazla_istek', retryAfter: 60 },
+    { status: 429, headers: { 'Retry-After': '60', 'Cache-Control': 'no-store' } },
+  );
+}
 
 function allowedOrigins(env: Env): string[] {
   return env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function isAllowedOrigin(origin: string | null, requestUrl: URL, allowed: readonly string[]): boolean {
+  return origin === null || origin === requestUrl.origin || allowed.includes(origin);
 }
 
 function generateCode(): string {
@@ -56,6 +84,8 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
 
   if (path === '/api/rooms') {
     if (request.method !== 'POST') return new Response('yontem uygun degil', { status: 405 });
+    const creationLimit = await env.ROOM_CREATE_LIMITER.limit({ key: clientRateKey(request) });
+    if (!creationLimit.success) return tooManyRequests();
     for (let i = 0; i < MAX_CODE_TRIES; i++) {
       const code = generateCode();
       const res = await roomStub(env, code).fetch(`https://do/reserve?code=${code}`, { method: 'POST' });
@@ -68,6 +98,8 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
   const roomMatch = path.match(/^\/api\/rooms\/([^/]+)$/);
   if (roomMatch) {
     if (request.method !== 'GET') return new Response('yontem uygun degil', { status: 405 });
+    const lookupLimit = await env.ROOM_LOOKUP_LIMITER.limit({ key: clientRateKey(request) });
+    if (!lookupLimit.success) return tooManyRequests();
     const code = roomMatch[1].toUpperCase();
     if (!CODE_RE.test(code)) return Response.json({ exists: false, joinable: false });
     return roomStub(env, code).fetch('https://do/status');
@@ -76,14 +108,22 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
   return new Response('bulunamadi', { status: 404 });
 }
 
-function handleWs(request: Request, env: Env, url: URL, origin: string | null, allowed: string[]): Response | Promise<Response> {
+async function handleWs(
+  request: Request,
+  env: Env,
+  url: URL,
+  origin: string | null,
+  allowed: string[],
+): Promise<Response> {
   // Once upgrade ve origin dogrulanir; WS CORS'a tabi degildir, guvenlik siniri burasi.
   if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
     return new Response('websocket upgrade gerekli', { status: 426 });
   }
-  if (origin && !allowed.includes(origin)) {
+  if (!isAllowedOrigin(origin, url, allowed)) {
     return new Response('izin verilmeyen origin', { status: 403 });
   }
+  const lookupLimit = await env.ROOM_LOOKUP_LIMITER.limit({ key: clientRateKey(request) });
+  if (!lookupLimit.success) return tooManyRequests();
   const match = url.pathname.match(/^\/ws\/([^/]+)$/);
   const code = match ? match[1].toUpperCase() : '';
   if (!CODE_RE.test(code)) {
@@ -99,7 +139,7 @@ export default {
     const allowed = allowedOrigins(env);
 
     if (url.pathname.startsWith('/api/')) {
-      if (origin && !allowed.includes(origin)) {
+      if (!isAllowedOrigin(origin, url, allowed)) {
         return new Response('izin verilmeyen origin', { status: 403 });
       }
       if (request.method === 'OPTIONS') return preflight(request, origin);

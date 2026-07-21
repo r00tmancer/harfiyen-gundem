@@ -18,7 +18,7 @@ import {
   normalizeTr,
   pairKey,
 } from '@harfiyen/shared';
-import type { ClientMsg, GameMode, RoomSnapshot, ServerMsg } from '@harfiyen/shared';
+import type { GameMode, RoomSnapshot, ServerMsg } from '@harfiyen/shared';
 import {
   canReact,
   canUseJoker,
@@ -32,13 +32,21 @@ import {
   toWordSet,
   validateWord,
 } from './game/logic';
+import { parseClientMessage } from './game/client-message';
+import {
+  WS_APP_PROTOCOL,
+  createPublicPlayerId,
+  hashReconnectSecret,
+  parseReconnectProtocols,
+  resolvePlayerJoin,
+} from './reconnect-auth';
 import type { PlayerState, RoomCtx, RoomState } from './game/state';
 import * as sayi from './game/modes/sayi';
 import * as zincir from './game/modes/zincir';
 import * as uzun from './game/modes/uzun';
 import * as bom from './game/modes/bom';
 import * as telepati from './game/modes/telepati';
-import type { Env } from './env';
+import * as korSiralama from './game/modes/kor-siralama';
 import wordsRaw from './data/words.txt';
 import pairsJson from './data/pairs.json';
 import badwordsJson from './data/badwords.json';
@@ -47,7 +55,7 @@ const CLEANUP_MS = 10 * 60_000;
 const STATE_KEY = 'state';
 const FALLBACK_NICK = 'Oyuncu';
 
-const MODES: GameMode[] = ['harf', 'sayi', 'zincir', 'uzun', 'bom', 'telepati'];
+const MODES: GameMode[] = ['harf', 'sayi', 'zincir', 'uzun', 'bom', 'telepati', 'kor_siralama'];
 function isGameMode(x: unknown): x is GameMode {
   return typeof x === 'string' && (MODES as string[]).includes(x);
 }
@@ -94,7 +102,7 @@ export class GameRoom extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
-      return this.handleJoin(url);
+      return this.handleJoin(request, url);
     }
     if (url.pathname === '/reserve' && request.method === 'POST') {
       return this.handleReserve(url);
@@ -135,6 +143,7 @@ export class GameRoom extends DurableObject<Env> {
       uzun: null,
       bom: null,
       telepati: null,
+      korSiralama: null,
     };
     await this.ctx.storage.setAlarm(Date.now() + CLEANUP_MS);
     await this.save(state);
@@ -143,33 +152,54 @@ export class GameRoom extends DurableObject<Env> {
 
   // ---- Katilim ----
 
-  private async handleJoin(url: URL): Promise<Response> {
+  private async handleJoin(request: Request, url: URL): Promise<Response> {
+    const auth = parseReconnectProtocols(request.headers.get('Sec-WebSocket-Protocol'));
+    if (!auth.ok) return new Response('gecersiz websocket kimligi', { status: 400 });
+    const reconnectHash = await hashReconnectSecret(auth.secret);
+
     const pair = new WebSocketPair();
     const client = pair[0];
     const server = pair[1];
+    const upgradeHeaders = { 'Sec-WebSocket-Protocol': WS_APP_PROTOCOL };
 
     const reject = (code: 'room_full' | 'not_found' | 'bad_msg', msg?: string): Response => {
-      server.accept();
-      server.send(JSON.stringify({ t: 'error', code, msg } satisfies ServerMsg));
-      server.close(1008, code);
-      return new Response(null, { status: 101, webSocket: client });
+      // Reddetme soketini de hibernation API'sine ver; istemci 101'i alirken
+      // koparsa hata GameRoom.webSocketError'a duser ve DO'yu dusurmez.
+      this.ctx.acceptWebSocket(server, ['rejected']);
+      server.serializeAttachment({ pid: '' } satisfies Attachment);
+      // 101 yaniti istemciye ulasmadan ayni tikta send/close etmek workerd'de
+      // `Network connection lost` uretebilir. Kisa beklemeler waitUntil ile
+      // izlenir; istemci hata mesajini alir, sonra politika koduyla kapanir.
+      this.ctx.waitUntil(
+        (async () => {
+          await scheduler.wait(5);
+          try {
+            server.send(JSON.stringify({ t: 'error', code, msg } satisfies ServerMsg));
+            await scheduler.wait(25);
+            server.close(1008, code);
+          } catch {
+            // istemci once kapatmis olabilir
+          }
+        })(),
+      );
+      return new Response(null, { status: 101, webSocket: client, headers: upgradeHeaders });
     };
 
     const state = await this.getState();
     if (!state) return reject('not_found');
 
-    const pid = (url.searchParams.get('pid') ?? '').trim().slice(0, 64);
-    if (!pid) return reject('bad_msg', 'pid gerekli');
+    const resolution = await resolvePlayerJoin(state.players, reconnectHash);
+    if (resolution.kind === 'full') return reject('room_full');
 
-    let player = state.players.find((p) => p.id === pid);
-    if (!player) {
-      if (state.players.length >= 2) return reject('room_full');
+    let player: PlayerState;
+    if (resolution.kind === 'new') {
       const rawNick = (url.searchParams.get('nick') ?? '').trim().slice(0, MAX_NICK_LEN);
       const nick = rawNick && isNickClean(rawNick, getBadwords()) ? rawNick : FALLBACK_NICK;
       const avatarRaw = Number(url.searchParams.get('avatar'));
       const avatar = Number.isInteger(avatarRaw) && avatarRaw >= 0 && avatarRaw < AVATAR_COUNT ? avatarRaw : 0;
       player = {
-        id: pid,
+        id: createPublicPlayerId(state.players),
+        reconnectHash,
         nick,
         avatar,
         score: 0,
@@ -184,8 +214,9 @@ export class GameRoom extends DurableObject<Env> {
       state.creator ??= player.id; // ilk katilan odayi kurar (players[0])
       state.jokers[player.id] = 1; // her oyuncu maca 1 jokerle baslar
     } else {
-      // ayni pid geri geldi: eski soket(ler) kapatilir, yenisi gecer
-      for (const old of this.ctx.getWebSockets(pid)) {
+      player = resolution.player;
+      // Ayni secret geri geldi: eski soket(ler) kapatilir, yenisi gecer.
+      for (const old of this.ctx.getWebSockets(player.id)) {
         try {
           old.close(1000, 'replaced');
         } catch {
@@ -206,27 +237,40 @@ export class GameRoom extends DurableObject<Env> {
     }
 
     await this.save(state);
-    this.ctx.acceptWebSocket(server, [pid]);
-    server.serializeAttachment({ pid } satisfies Attachment);
-    this.sendToOthers(pid, { t: 'opp_conn', connected: true });
+    this.ctx.acceptWebSocket(server, [player.id]);
+    server.serializeAttachment({ pid: player.id } satisfies Attachment);
+    this.sendToOthers(player.id, { t: 'opp_conn', connected: true });
     this.broadcastSnapshot(state);
-    return new Response(null, { status: 101, webSocket: client });
+    return new Response(null, { status: 101, webSocket: client, headers: upgradeHeaders });
   }
 
   // ---- WS mesajlari ----
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    if (typeof message !== 'string') return;
     const pid = this.pidOf(ws);
     if (!pid) return;
 
-    let msg: ClientMsg;
-    try {
-      msg = JSON.parse(message) as ClientMsg;
-    } catch {
-      this.sendTo(ws, { t: 'error', code: 'bad_msg', msg: 'gecersiz json' });
+    const parsed = parseClientMessage(message);
+    if (!parsed.ok) {
+      const detail =
+        parsed.reason === 'too_large'
+          ? 'mesaj cok buyuk'
+          : parsed.reason === 'binary_not_supported'
+            ? 'binary mesaj desteklenmiyor'
+            : parsed.reason === 'invalid_json'
+              ? 'gecersiz json'
+              : 'gecersiz mesaj';
+      this.sendTo(ws, { t: 'error', code: 'bad_msg', msg: detail });
+      if (parsed.reason === 'too_large' || parsed.reason === 'binary_not_supported') {
+        try {
+          ws.close(parsed.reason === 'too_large' ? 1009 : 1003, detail);
+        } catch {
+          // kapanmakta olan soket
+        }
+      }
       return;
     }
+    const msg = parsed.value;
 
     const state = await this.getState();
     if (!state) return;
@@ -254,6 +298,12 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'telepati_answer':
         await telepati.onAnswer(this.mc(), state, player, msg.choice);
+        break;
+      case 'kor_rank':
+        await korSiralama.onRank(this.mc(), state, player, msg.slot, msg.itemIndex, msg.item);
+        break;
+      case 'kor_pass':
+        await korSiralama.onJoker(this.mc(), state, player, msg.itemIndex, msg.item);
         break;
       case 'submit_word':
         if (state.mode === 'zincir') await zincir.onSubmit(this.mc(), state, player, ws, msg.word);
@@ -305,6 +355,8 @@ export class GameRoom extends DurableObject<Env> {
       case 'telepati':
         await telepati.onJoker(this.mc(), state, player);
         break;
+      case 'kor_siralama':
+        break; // bu mod stale-kart korumali kor_pass mesaji kullanir
     }
   }
 
@@ -337,6 +389,9 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'telepati':
         await telepati.startMatch(this.mc(), state);
+        break;
+      case 'kor_siralama':
+        await korSiralama.startMatch(this.mc(), state);
         break;
     }
   }
@@ -460,6 +515,8 @@ export class GameRoom extends DurableObject<Env> {
       state.uzun = null;
       state.bom = null;
       state.telepati = null; // rovansta taze soru alt kumesi kurulur
+      state.korSiralama = null; // rovansta taze konu/deste secilir
+      this.broadcast({ t: 'rematch_state', want: [] });
       // mod rovansta korunur; her mod kendi durumunu bastan kurar
       await this.startMode(state);
       return;
@@ -479,6 +536,7 @@ export class GameRoom extends DurableObject<Env> {
     state.uzun = null;
     state.bom = null;
     state.telepati = null;
+    state.korSiralama = null;
     for (const p of state.players) p.pickedLetter = null;
     state.deadline = Date.now() + PICK_MS;
     state.alarmPurpose = 'phase';
@@ -556,6 +614,7 @@ export class GameRoom extends DurableObject<Env> {
         else if (state.mode === 'zincir') await zincir.startTurn(this.mc(), state);
         else if (state.mode === 'bom') await bom.startTurn(this.mc(), state);
         else if (state.mode === 'telepati') await telepati.startQuestion(this.mc(), state);
+        else if (state.mode === 'kor_siralama') await korSiralama.startItem(this.mc(), state);
         else await this.startRacing(state); // harf
         break;
       case 'racing': {
@@ -590,6 +649,12 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'telepati_reveal':
         await telepati.onRevealDone(this.mc(), state);
+        break;
+      case 'kor_sirala':
+        await korSiralama.onPickDeadline(this.mc(), state);
+        break;
+      case 'kor_reveal':
+        await korSiralama.onRevealDone(this.mc(), state);
         break;
       case 'round_end':
         if (state.mode === 'sayi') {
@@ -679,6 +744,7 @@ export class GameRoom extends DurableObject<Env> {
       state.uzun ??= null;
       state.bom ??= null;
       state.telepati ??= null;
+      state.korSiralama ??= null;
     }
     return state;
   }
@@ -709,12 +775,15 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private broadcast(msg: ServerMsg): void {
-    for (const ws of this.ctx.getWebSockets()) this.sendTo(ws, msg);
+    for (const ws of this.ctx.getWebSockets()) {
+      if (this.pidOf(ws)) this.sendTo(ws, msg);
+    }
   }
 
   private sendToOthers(pid: string, msg: ServerMsg): void {
     for (const ws of this.ctx.getWebSockets()) {
-      if (this.pidOf(ws) !== pid) this.sendTo(ws, msg);
+      const otherPid = this.pidOf(ws);
+      if (otherPid && otherPid !== pid) this.sendTo(ws, msg);
     }
   }
 
@@ -777,6 +846,37 @@ export class GameRoom extends DurableObject<Env> {
           }
         : null;
 
+    // Kor Siralama: aktif turda rakibin tam listesi gizli; alici yalniz kendi
+    // yuvalarini ve rakibin kilitleyip kilitlemedigini gorur. Reveal'de o kartin
+    // iki sira numarasi, mac sonunda iki tam liste birden acilir.
+    const kor = state.korSiralama;
+    const korItem = kor?.pack.items[kor.itemIndex];
+    const korVisible = state.phase === 'kor_sirala' || state.phase === 'kor_reveal' || state.phase === 'match_end';
+    const korSnap =
+      kor && korItem && korVisible
+        ? {
+            topic: kor.pack.topic,
+            prompt: kor.pack.prompt,
+            itemIndex: kor.itemIndex + 1,
+            currentItem: korItem,
+            mySlots: [...(kor.placements[you] ?? [])],
+            myRanked: kor.answers[you] !== undefined,
+            oppRanked: opp ? kor.answers[opp.id] !== undefined : false,
+            exactMatches: kor.exactMatches,
+            lastSlots: state.phase === 'kor_reveal' || state.phase === 'match_end' ? kor.lastSlots : null,
+            compatibility: state.phase === 'match_end' ? kor.compatibility : null,
+            finalRankings:
+              state.phase === 'match_end'
+                ? Object.fromEntries(
+                    state.players.map((player) => [
+                      player.id,
+                      (kor.placements[player.id] ?? []).map((item) => item ?? '—'),
+                    ]),
+                  )
+                : null,
+          }
+        : null;
+
     // Bom: gizli alan yok; sunucu durumu oldugu gibi gorunur.
     const bomSnap = state.bom
       ? {
@@ -814,6 +914,7 @@ export class GameRoom extends DurableObject<Env> {
       uzun: uzunSnap,
       bom: bomSnap,
       telepati: telepatiSnap,
+      korSiralama: korSnap,
     };
   }
 }

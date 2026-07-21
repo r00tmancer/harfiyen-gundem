@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { apiCheckRoom, apiCreateRoom, connect } from '../net/ws';
 import { Avatar, AVATAR_NAMES, AVATAR_PICK_COLORS } from '../ui/avatars';
 import { staggerIn, dropIn } from '../fx/anim';
-import { haptics, hapticsEnabled, setHapticsEnabled } from '../fx/haptics';
+import { haptics, hapticsEnabled, hapticsSupported, setHapticsEnabled } from '../fx/haptics';
 
 const LOGO = ['H', 'A', 'R', 'F', 'İ', 'Y', 'E', 'N'];
 const LOGO_COLORS = [
@@ -110,10 +110,8 @@ export default function Home() {
         st.setHomeError('Oda bulunamadı');
         return;
       }
-      if (!info.joinable) {
-        st.setHomeError('Oda dolu');
-        return;
-      }
+      // Oda dolu gorunse bile mevcut oyuncu secret'i ile yeniden baglanabilir.
+      // Gercek doluluk/kimlik karari WebSocket katiliminda verilir.
       location.hash = `#/oda/${code}`;
       st.enterRoom(code);
       connect(code);
@@ -128,9 +126,9 @@ export default function Home() {
     <div ref={root} className="flex w-full flex-col items-center gap-5 pt-10 pb-6">
       <Logo />
       <p data-pop className="text-center text-[15px] font-bold" style={{ color: 'var(--ink-soft)' }}>
-        Harfini seç, kelimeyi ilk sen bul.
+        İki telefon, tek oda, bolca sürpriz.
         <br />
-        1v1 Türkçe kelime düellosu.
+        Sevgilinle ya da arkadaşınla hızlı oyunlar.
       </p>
 
       {fromLink && (
@@ -153,7 +151,7 @@ export default function Home() {
           type="text"
           value={nick}
           maxLength={MAX_NICK_LEN}
-          placeholder="ör. kelimeci"
+          placeholder="ör. yıldıztozu"
           autoComplete="nickname"
           onChange={(e) => useStore.getState().setNick(e.target.value)}
         />
@@ -175,8 +173,8 @@ export default function Home() {
             </button>
           ))}
         </div>
-        {/* titresim ayari (iOS Safari titresimi desteklemez, orada sessiz kalir) */}
-        <div className="mt-5 flex items-center justify-between">
+        {/* iOS Safari titreşimi desteklemez; orada işlevsiz bir kontrol göstermeyiz. */}
+        {hapticsSupported() && <div className="mt-5 flex items-center justify-between">
           <span
             id="vib-label"
             className="font-display text-sm font-bold"
@@ -194,7 +192,7 @@ export default function Home() {
           >
             <span className="knob" aria-hidden="true" />
           </button>
-        </div>
+        </div>}
       </div>
 
       {homeError && (
