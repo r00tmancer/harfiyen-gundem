@@ -1,7 +1,15 @@
 // GameRoom kalici durum modelleri ve mod isleyicilerinin kullandigi baglam arayuzu.
 // Sunucu tarafi durum, snapshot'tan AYRIDIR: gizli bilgiler (sayi sirlari) burada tutulur,
 // snapshot'a asla sizmaz (round_end aralik-daraltma acilimi haric).
-import type { GameMode, KorSiralamaPack, Phase, ServerMsg, TelepatiQuestion } from '@harfiyen/shared';
+import type {
+  BeniYakalaQuestion,
+  BeniYakalaReveal,
+  GameMode,
+  KorSiralamaPack,
+  Phase,
+  ServerMsg,
+  TelepatiQuestion,
+} from '@harfiyen/shared';
 
 export interface PlayerState {
   id: string; // herkese acik, oda icinde sabit oyuncu kimligi
@@ -65,6 +73,19 @@ export interface KorSiralamaServer {
   compatibility: number | null;
 }
 
+// Beni Yakala: answers/predictions aktif fazlarda SADECE sunucuda tutulur.
+// Snapshot her aliciya yalniz kendi ham degerini verir; iki taraf ancak reveal'de acilir.
+export interface BeniYakalaServer {
+  questions: BeniYakalaQuestion[];
+  roundIndex: number; // 0 tabanli
+  answers: Record<string, number>; // pid -> 0..3; eksik = cevaplamadi
+  predictions: Record<string, number>; // pid -> partner icin 0..3; eksik = tahmin etmedi
+  reads: Record<string, number>; // pid -> toplam dogru tahmin
+  exactMatches: number;
+  mutualReads: number;
+  reveal: BeniYakalaReveal | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -95,6 +116,7 @@ export interface RoomState {
   bom: BomServer | null;
   telepati: TelepatiServer | null;
   korSiralama: KorSiralamaServer | null;
+  beniYakala: BeniYakalaServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

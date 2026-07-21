@@ -26,8 +26,8 @@ export default function App() {
         {screen === 'game' && <Game />}
         {screen === 'victory' && <Victory />}
       </main>
-      {/* tepkiler: oda ekranlarinin tumunde (lobi, oyun, zafer) */}
-      {screen !== 'home' && <Reactions />}
+      {/* sonuc ekraninda paylasim/rovans butonlarini kapatmamak icin tepki butonu gizlenir */}
+      {screen !== 'home' && screen !== 'victory' && <Reactions />}
       <ConnToast />
     </>
   );

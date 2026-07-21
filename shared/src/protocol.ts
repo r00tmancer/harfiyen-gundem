@@ -16,7 +16,15 @@ export const JOKER_FREEZE_MS = 5_000; // buz jokeri: rakibin yazma alanı bu kad
 export const JOKER_PER_ROUNDS = 5; // her 5 raundluk blok için 1 joker hakkı (1. ve 6. raundda dolar)
 
 // ---- Oyun modları ----
-export type GameMode = 'harf' | 'sayi' | 'zincir' | 'uzun' | 'bom' | 'telepati' | 'kor_siralama';
+export type GameMode =
+  | 'harf'
+  | 'sayi'
+  | 'zincir'
+  | 'uzun'
+  | 'bom'
+  | 'telepati'
+  | 'kor_siralama'
+  | 'beni_yakala';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -28,6 +36,13 @@ export const TELEPATI_REVEAL_MS = 3_500;
 export const KOR_SIRALAMA_ITEMS = 5;
 export const KOR_SIRALAMA_PICK_MS = 20_000;
 export const KOR_SIRALAMA_REVEAL_MS = 3_200;
+
+// Beni Yakala — once kendi secimini kilitle, sonra partnerinin secimini tahmin et
+export const BENI_YAKALA_ROUNDS = 5;
+export const BENI_YAKALA_OPTION_COUNT = 4;
+export const BENI_YAKALA_ANSWER_MS = 10_000;
+export const BENI_YAKALA_PREDICT_MS = 10_000;
+export const BENI_YAKALA_REVEAL_MS = 3_200;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -67,7 +82,7 @@ export const UZUN_TARGET = 5; // maçı kazanmak için puan
 
 // Mod başına joker türü (UI metni istemcide)
 export type JokerKind = 'buz' | 'termometre' | 'pas' | 'cifte_sans' | 'sigorta' | 'cifte_kalp';
-export const MODE_JOKER: Record<GameMode, JokerKind> = {
+export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   harf: 'buz',
   sayi: 'termometre',
   zincir: 'pas',
@@ -75,6 +90,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind> = {
   bom: 'sigorta', // bir sonraki hatanı affeder (can gitmez)
   telepati: 'cifte_kalp', // bu soru eşleşirse 2 puan sayılır
   kor_siralama: 'pas', // mevcut karti sona atar; siradaki kart bilinmez
+  beni_yakala: null, // bu modda joker yok
 };
 
 export const TR_LETTERS = [
@@ -122,6 +138,9 @@ export type Phase =
   | 'telepati_reveal' // (telepati) cevaplar açıldı, eşleşme gösteriliyor
   | 'kor_sirala' // (kor siralama) mevcut kart bos bir 1-5 yuvasina kilitleniyor
   | 'kor_reveal' // (kor siralama) iki oyuncunun bu karttaki sirasi aciliyor
+  | 'beni_yakala_answer' // (beni yakala) herkes kendi tercihini gizlice kilitliyor
+  | 'beni_yakala_predict' // (beni yakala) herkes partnerinin tercihini tahmin ediyor
+  | 'beni_yakala_reveal' // (beni yakala) cevaplar ve tahminler aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -189,6 +208,35 @@ export interface KorSiralamaState {
   finalRankings: Record<string, string[]> | null; // yalniz mac sonunda iki liste
 }
 
+export interface BeniYakalaQuestion {
+  prompt: string;
+  options: [string, string, string, string];
+}
+
+export interface BeniYakalaReveal {
+  answers: Record<string, number | null>; // pid -> gercek secim; timeout = null
+  predictions: Record<string, number | null>; // pid -> partner tahmini; timeout = null
+  correct: Record<string, boolean>; // pid -> partnerini bu turda bildi mi
+  exactMatch: boolean; // iki gercek secim ayni mi (null eslesme sayilmaz)
+  mutualRead: boolean; // iki oyuncu da birbirini bildi mi
+}
+
+export interface BeniYakalaState {
+  round: number; // 1..BENI_YAKALA_ROUNDS
+  prompt: string;
+  options: [string, string, string, string];
+  myAnswered: boolean;
+  oppAnswered: boolean;
+  myPredicted: boolean;
+  oppPredicted: boolean;
+  myAnswer: number | null; // sadece alicinin kendi secimi; 0..3
+  myPrediction: number | null; // sadece alicinin kendi tahmini; 0..3
+  reads: Record<string, number>; // pid -> dogru partner tahmini sayisi
+  exactMatches: number; // gercek cevaplarin ayni oldugu tur sayisi
+  mutualReads: number; // iki oyuncunun da birbirini bildigi tur sayisi
+  reveal: BeniYakalaReveal | null;
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -219,6 +267,7 @@ export interface RoomSnapshot {
   bom: BomState | null;
   telepati: TelepatiState | null;
   korSiralama: KorSiralamaState | null;
+  beniYakala: BeniYakalaState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -233,6 +282,8 @@ export type ClientMsg =
   | { t: 'telepati_answer'; choice: 'a' | 'b' | 'ben' | 'o' } // (telepati) gizli cevap
   | { t: 'kor_rank'; slot: number; itemIndex: number; item: string } // stale kart hamlesi sunucuda reddedilir
   | { t: 'kor_pass'; itemIndex: number; item: string } // (kor siralama) gorulen karti sona at
+  | { t: 'beni_yakala_answer'; choice: number; round: number } // choice 0..3; stale tur reddedilir
+  | { t: 'beni_yakala_predict'; choice: number; round: number } // partner tahmini; stale tur reddedilir
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

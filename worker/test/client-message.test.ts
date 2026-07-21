@@ -23,6 +23,8 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'telepati_answer', choice: 'o' },
     { t: 'kor_rank', slot: 5, itemIndex: 1, item: 'Meteor Mantısı' },
     { t: 'kor_pass', itemIndex: 5, item: 'Ay Peyniri' },
+    { t: 'beni_yakala_answer', choice: 0, round: 1 },
+    { t: 'beni_yakala_predict', choice: 3, round: 5 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -133,6 +135,26 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
     ];
     for (const value of invalid) {
       expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('beni yakala choice ve stale-round alanlarini tam 0..3 / 1..5 araligina sinirlar', () => {
+    for (const t of ['beni_yakala_answer', 'beni_yakala_predict'] as const) {
+      const invalid = [
+        { t, choice: -1, round: 1 },
+        { t, choice: 4, round: 1 },
+        { t, choice: 1.5, round: 1 },
+        { t, choice: '1', round: 1 },
+        { t, choice: 0, round: 0 },
+        { t, choice: 0, round: 6 },
+        { t, choice: 0, round: 1.5 },
+        { t, choice: 0, round: '1' },
+        { t, choice: 0 },
+        { t, choice: 0, round: 1, extra: true },
+      ];
+      for (const value of invalid) {
+        expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+      }
     }
   });
 

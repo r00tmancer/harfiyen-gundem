@@ -1,0 +1,194 @@
+[
+  {
+    "prompt": "Gece acıksan hangisini seçerdin?",
+    "options": ["Tost", "Pizza", "Meyve", "Hiçbir şey"]
+  },
+  {
+    "prompt": "Mükemmel buluşma hangisi?",
+    "options": ["Evde film", "Sahil yürüyüşü", "Yeni bir restoran", "Mini yolculuk"]
+  },
+  {
+    "prompt": "Hafta sonu kaçta uyanmak istersin?",
+    "options": ["08.00'den önce", "09.00 civarı", "Öğlene doğru", "Alarm olmadan"]
+  },
+  {
+    "prompt": "Birlikte izlenecek tür hangisi?",
+    "options": ["Komedi", "Korku", "Bilim kurgu", "Romantik"]
+  },
+  {
+    "prompt": "Tatilde ilk tercihin ne olur?",
+    "options": ["Deniz", "Dağ", "Şehir", "Kamp"]
+  },
+  {
+    "prompt": "Hangi sürpriz seni daha çok mutlu eder?",
+    "options": ["Küçük hediye", "Sevdiğim yemek", "Gizli plan", "Uzun bir not"]
+  },
+  {
+    "prompt": "Yağmurlu akşam planın ne olur?",
+    "options": ["Battaniye ve film", "Kahve içmek", "Yağmurda yürümek", "Oyun oynamak"]
+  },
+  {
+    "prompt": "Birlikte öğrenmek istediğin şey?",
+    "options": ["Dans", "Yeni bir dil", "Yemek yapmak", "Bir enstrüman"]
+  },
+  {
+    "prompt": "Uzun yolculukta görevini seç?",
+    "options": ["Müzik seçmek", "Navigasyon", "Atıştırmalık", "Sohbeti açmak"]
+  },
+  {
+    "prompt": "Kahvaltıda vazgeçilmezin hangisi?",
+    "options": ["Yumurta", "Peynir", "Tatlı", "Sadece kahve"]
+  },
+  {
+    "prompt": "Bir günlüğüne hangi gücü isterdin?",
+    "options": ["Uçmak", "Işınlanmak", "Zamanı durdurmak", "Zihin okumak"]
+  },
+  {
+    "prompt": "Evin en keyifli köşesi hangisi?",
+    "options": ["Yatak", "Koltuk", "Mutfak", "Balkon"]
+  },
+  {
+    "prompt": "Birlikte çekilecek fotoğraf tarzı?",
+    "options": ["Doğal an", "Komik poz", "Manzaralı", "Şık ve planlı"]
+  },
+  {
+    "prompt": "Telefonunda en çok neye bakarsın?",
+    "options": ["Mesajlar", "Kısa videolar", "Müzik", "Haberler"]
+  },
+  {
+    "prompt": "Gece uyumadan önce ne istersin?",
+    "options": ["Sohbet", "Müzik", "Dizi", "Sessizlik"]
+  },
+  {
+    "prompt": "Hangi tatlıyı şimdi seçerdin?",
+    "options": ["Çikolatalı", "Sütlü", "Meyveli", "Dondurma"]
+  },
+  {
+    "prompt": "Ortak evcil hayvan tercihin?",
+    "options": ["Kedi", "Köpek", "Kuş", "Hiçbiri"]
+  },
+  {
+    "prompt": "En güzel mesaj hangi saatte gelir?",
+    "options": ["Günaydın", "Öğle arası", "Akşam", "İyi geceler"]
+  },
+  {
+    "prompt": "Bir gün tamamen boşsa ne yaparsın?",
+    "options": ["Evde dinlenirim", "Gezmeye çıkarım", "Arkadaş görürüm", "Yeni bir şey denerim"]
+  },
+  {
+    "prompt": "Konserde nerede olmak istersin?",
+    "options": ["En ön", "Ortada", "Sakin bir köşe", "Evde kayıttan"]
+  },
+  {
+    "prompt": "Hangi mevsim sana daha çok uyuyor?",
+    "options": ["İlkbahar", "Yaz", "Sonbahar", "Kış"]
+  },
+  {
+    "prompt": "Birlikte yapılacak yarış hangisi?",
+    "options": ["Bilgi yarışması", "Kart oyunu", "Bowling", "Yemek düellosu"]
+  },
+  {
+    "prompt": "Piknik sepetinde önce ne olmalı?",
+    "options": ["Sandviç", "Meyve", "Tatlı", "Soğuk içecek"]
+  },
+  {
+    "prompt": "Hangi küçük jest günü güzelleştirir?",
+    "options": ["Sarılmak", "Komik mesaj", "Kahve getirmek", "Şarkı göndermek"]
+  },
+  {
+    "prompt": "Birlikte hangi şehre ışınlanırdın?",
+    "options": ["İstanbul", "Roma", "Tokyo", "Reykjavik"]
+  },
+  {
+    "prompt": "Film gecesinde atıştırmalığın?",
+    "options": ["Patlamış mısır", "Cips", "Çikolata", "Meyve"]
+  },
+  {
+    "prompt": "Evde müzik açılınca ne yaparsın?",
+    "options": ["Dans ederim", "Eşlik ederim", "Dinlerim", "Şarkıyı değiştiririm"]
+  },
+  {
+    "prompt": "Birlikte üretilecek şey hangisi?",
+    "options": ["Fotoğraf albümü", "Çalma listesi", "Tarif defteri", "Gezi haritası"]
+  },
+  {
+    "prompt": "Hangi içecek seni daha iyi anlatır?",
+    "options": ["Türk kahvesi", "Çay", "Limonata", "Sıcak çikolata"]
+  },
+  {
+    "prompt": "Sürpriz tatil çantana ilk neyi atarsın?",
+    "options": ["Kulaklık", "Güneş gözlüğü", "Kitap", "Atıştırmalık"]
+  },
+  {
+    "prompt": "Birlikte gece dışarı çıksanız nereye?",
+    "options": ["Sahile", "Tatlıcıya", "Canlı müziğe", "Gece yürüyüşüne"]
+  },
+  {
+    "prompt": "Hangi oyun rolünü seçersin?",
+    "options": ["Lider", "Stratejist", "Kaşif", "Moral kaynağı"]
+  },
+  {
+    "prompt": "Bir uzay gemisinde görevin ne olur?",
+    "options": ["Pilot", "Şef", "Bilim insanı", "Harita uzmanı"]
+  },
+  {
+    "prompt": "Uzay mutfağında ne pişirirdin?",
+    "options": ["Meteor mantısı", "Ay pizzası", "Nebula çorbası", "Yıldız tatlısı"]
+  },
+  {
+    "prompt": "Uzay canavarı gelirse ilk hamlen?",
+    "options": ["Saklanmak", "Arkadaş olmak", "Yemek vermek", "Hızla kaçmak"]
+  },
+  {
+    "prompt": "Yeni gezegene hangi şeyi götürürsün?",
+    "options": ["Kahve", "Müzik", "Battaniye", "Kamera"]
+  },
+  {
+    "prompt": "Ay üssündeki ilk etkinlik ne olsun?",
+    "options": ["Yerçekimsiz dans", "Krater pikniği", "Uzay karaoke", "Yıldız izlemek"]
+  },
+  {
+    "prompt": "Sabah enerjini ne yükseltir?",
+    "options": ["Kahve", "Müzik", "Duş", "Beş dakika daha uyku"]
+  },
+  {
+    "prompt": "Birlikte koleksiyon yapsanız ne olurdu?",
+    "options": ["Fotoğraflar", "Biletler", "Magnetler", "Komik notlar"]
+  },
+  {
+    "prompt": "Hangi emoji seni daha iyi anlatır?",
+    "options": ["😂", "🥹", "😎", "🤭"]
+  },
+  {
+    "prompt": "Bir kafede nerede oturursun?",
+    "options": ["Cam kenarı", "Bahçe", "Sessiz köşe", "Kalabalığın ortası"]
+  },
+  {
+    "prompt": "Ani plan gelince tepkin ne olur?",
+    "options": ["Hemen hazırım", "Detay sorarım", "Biraz düşünürüm", "Evde kalırım"]
+  },
+  {
+    "prompt": "Hangi koku sana huzur verir?",
+    "options": ["Kahve", "Yağmur", "Deniz", "Temiz çarşaf"]
+  },
+  {
+    "prompt": "Birlikte hangi anı tekrar yaşardın?",
+    "options": ["İlk buluşma", "Komik bir gün", "Bir yolculuk", "Sakin bir akşam"]
+  },
+  {
+    "prompt": "Akşam yemeği kararını nasıl verirsin?",
+    "options": ["Canım ne çekerse", "Yeni yer denerim", "Her zamanki favori", "Partnerim seçsin"]
+  },
+  {
+    "prompt": "Birlikte hangi içerik çekilir?",
+    "options": ["Komik skeç", "Yemek testi", "Mini vlog", "Çift testi"]
+  },
+  {
+    "prompt": "Ortak çalma listesi nasıl olsun?",
+    "options": ["Hareketli", "Romantik", "Nostaljik", "Karışık sürpriz"]
+  },
+  {
+    "prompt": "Günün en sevdiğin anı hangisi?",
+    "options": ["Sabah", "Öğle", "Gün batımı", "Gece"]
+  }
+]

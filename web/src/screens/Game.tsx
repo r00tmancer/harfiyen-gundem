@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
+  BENI_YAKALA_ROUNDS,
   BOM_LIVES,
   JOKER_FREEZE_MS,
   KOR_SIRALAMA_ITEMS,
@@ -28,6 +29,7 @@ import { UzunRace, UzunReveal } from './modes/UzunGame';
 import { BomTurn } from './modes/BomGame';
 import { TelepatiReveal, TelepatiSoru } from './modes/TelepatiGame';
 import { KorSiralamaPick, KorSiralamaReveal } from './modes/KorSiralamaGame';
+import { BeniYakalaAnswer, BeniYakalaPredict, BeniYakalaReveal } from './modes/BeniYakalaGame';
 
 // skor gostergesi moda gore: harf/uzun yildiz, sayi madalya, zincir/bom kalp, telepati ortak uyum
 function ScoreGauge({ snap, p }: { snap: RoomSnapshot; p: PlayerPublic }) {
@@ -57,7 +59,12 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
   const myIdx = me ? playerIndex(snap, me.id) : 0;
   const oppIdx = myIdx === 0 ? 1 : 0;
   const isRanking = snap.mode === 'kor_siralama';
-  const matches = isRanking ? (snap.korSiralama?.exactMatches ?? 0) : (snap.telepati?.matches ?? 0);
+  const isReading = snap.mode === 'beni_yakala';
+  const matches = isRanking
+    ? (snap.korSiralama?.exactMatches ?? 0)
+    : isReading
+      ? (snap.beniYakala?.reads[snap.you] ?? 0)
+      : (snap.telepati?.matches ?? 0);
   const countRef = useRef<HTMLSpanElement>(null);
   const prev = useRef(matches);
 
@@ -96,7 +103,7 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
       </div>
       <span ref={countRef} className="chip chip-p1 font-display shrink-0 text-base">
         {isRanking ? <IconRanking size={15} /> : <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />}
-        {matches} {isRanking ? 'aynı sıra' : 'uyum'}
+        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : 'uyum'}
       </span>
     </div>
   );
@@ -621,8 +628,12 @@ export default function Game() {
           <WinWash mine={boomFx.mine} />
         </div>
       )}
-      {/* telepati rekabet degil: vs yerine yan yana avatarlar + ortak kalp sayaci */}
-      {mode === 'telepati' || mode === 'kor_siralama' ? <CoopScoreBar snap={snapshot} /> : <ScoreBar snap={snapshot} />}
+      {/* ko-op modlar: vs yerine yan yana avatarlar + ortak ilerleme */}
+      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' ? (
+        <CoopScoreBar snap={snapshot} />
+      ) : (
+        <ScoreBar snap={snapshot} />
+      )}
       <div className="flex items-center gap-2 self-center">
         <div className="chip chip-soft">
           {mode === 'zincir'
@@ -633,9 +644,17 @@ export default function Game() {
                 ? 'Soru'
                 : mode === 'kor_siralama'
                   ? 'Kart'
+                  : mode === 'beni_yakala'
+                    ? 'Tur'
                   : 'Raunt'}{' '}
           {snapshot.round}
-          {mode === 'telepati' ? `/${TELEPATI_QUESTIONS}` : mode === 'kor_siralama' ? `/${KOR_SIRALAMA_ITEMS}` : ''}
+          {mode === 'telepati'
+            ? `/${TELEPATI_QUESTIONS}`
+            : mode === 'kor_siralama'
+              ? `/${KOR_SIRALAMA_ITEMS}`
+              : mode === 'beni_yakala'
+                ? `/${BENI_YAKALA_ROUNDS}`
+                : ''}
         </div>
         <div className="chip" style={{ background: 'color-mix(in srgb, var(--grape) 22%, #fff)' }}>
           {MODE_META[mode].name}
@@ -653,6 +672,9 @@ export default function Game() {
       {snapshot.phase === 'telepati_reveal' && <TelepatiReveal snap={snapshot} />}
       {snapshot.phase === 'kor_sirala' && <KorSiralamaPick snap={snapshot} />}
       {snapshot.phase === 'kor_reveal' && <KorSiralamaReveal snap={snapshot} />}
+      {snapshot.phase === 'beni_yakala_answer' && <BeniYakalaAnswer snap={snapshot} />}
+      {snapshot.phase === 'beni_yakala_predict' && <BeniYakalaPredict snap={snapshot} />}
+      {snapshot.phase === 'beni_yakala_reveal' && <BeniYakalaReveal snap={snapshot} />}
       {snapshot.phase === 'round_end' &&
         (mode === 'sayi' ? (
           <SayiRoundEnd snap={snapshot} />

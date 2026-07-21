@@ -4,7 +4,7 @@ import type { GameMode } from '@harfiyen/shared';
 import { IconBomb, IconBurst, IconHeartsDuo, IconRanking, IconRuler, IconTarget, IconTilesDuo } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -51,11 +51,17 @@ export const MODE_META: Record<GameMode, ModeMeta> = {
     joker: 'Joker: Çifte Kalp — o soru 2 puan',
     Icon: IconHeartsDuo,
   },
+  beni_yakala: {
+    name: 'Beni Yakala',
+    desc: 'Önce kendini seç, sonra sevgilinin cevabını tahmin et.',
+    joker: '5 tur · 4 gizli seçenek',
+    badge: 'YENİ · 2 DK',
+    Icon: IconHeartsDuo,
+  },
   kor_siralama: {
     name: 'Kör Sıralama',
     desc: 'Gelecek kartları bilmeden seçenekleri 1-5 arasına kilitleyin.',
     joker: 'Joker: Pas — bu kartı destenin sonuna at',
-    badge: 'YENİ · 1 DK',
     Icon: IconRanking,
   },
 };

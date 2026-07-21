@@ -47,6 +47,7 @@ import * as uzun from './game/modes/uzun';
 import * as bom from './game/modes/bom';
 import * as telepati from './game/modes/telepati';
 import * as korSiralama from './game/modes/kor-siralama';
+import * as beniYakala from './game/modes/beni-yakala';
 import wordsRaw from './data/words.txt';
 import pairsJson from './data/pairs.json';
 import badwordsJson from './data/badwords.json';
@@ -55,7 +56,16 @@ const CLEANUP_MS = 10 * 60_000;
 const STATE_KEY = 'state';
 const FALLBACK_NICK = 'Oyuncu';
 
-const MODES: GameMode[] = ['harf', 'sayi', 'zincir', 'uzun', 'bom', 'telepati', 'kor_siralama'];
+const MODES: GameMode[] = [
+  'harf',
+  'sayi',
+  'zincir',
+  'uzun',
+  'bom',
+  'telepati',
+  'kor_siralama',
+  'beni_yakala',
+];
 function isGameMode(x: unknown): x is GameMode {
   return typeof x === 'string' && (MODES as string[]).includes(x);
 }
@@ -144,6 +154,7 @@ export class GameRoom extends DurableObject<Env> {
       bom: null,
       telepati: null,
       korSiralama: null,
+      beniYakala: null,
     };
     await this.ctx.storage.setAlarm(Date.now() + CLEANUP_MS);
     await this.save(state);
@@ -305,6 +316,12 @@ export class GameRoom extends DurableObject<Env> {
       case 'kor_pass':
         await korSiralama.onJoker(this.mc(), state, player, msg.itemIndex, msg.item);
         break;
+      case 'beni_yakala_answer':
+        await beniYakala.onAnswer(this.mc(), state, player, msg.choice, msg.round);
+        break;
+      case 'beni_yakala_predict':
+        await beniYakala.onPredict(this.mc(), state, player, msg.choice, msg.round);
+        break;
       case 'submit_word':
         if (state.mode === 'zincir') await zincir.onSubmit(this.mc(), state, player, ws, msg.word);
         else if (state.mode === 'uzun') await uzun.onSubmit(this.mc(), state, player, ws, msg.word);
@@ -357,6 +374,8 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'kor_siralama':
         break; // bu mod stale-kart korumali kor_pass mesaji kullanir
+      case 'beni_yakala':
+        break; // bu kisa cift testinde joker yok
     }
   }
 
@@ -392,6 +411,9 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'kor_siralama':
         await korSiralama.startMatch(this.mc(), state);
+        break;
+      case 'beni_yakala':
+        await beniYakala.startMatch(this.mc(), state);
         break;
     }
   }
@@ -516,6 +538,7 @@ export class GameRoom extends DurableObject<Env> {
       state.bom = null;
       state.telepati = null; // rovansta taze soru alt kumesi kurulur
       state.korSiralama = null; // rovansta taze konu/deste secilir
+      state.beniYakala = null; // rovansta taze bes soru secilir
       this.broadcast({ t: 'rematch_state', want: [] });
       // mod rovansta korunur; her mod kendi durumunu bastan kurar
       await this.startMode(state);
@@ -537,6 +560,7 @@ export class GameRoom extends DurableObject<Env> {
     state.bom = null;
     state.telepati = null;
     state.korSiralama = null;
+    state.beniYakala = null;
     for (const p of state.players) p.pickedLetter = null;
     state.deadline = Date.now() + PICK_MS;
     state.alarmPurpose = 'phase';
@@ -615,6 +639,7 @@ export class GameRoom extends DurableObject<Env> {
         else if (state.mode === 'bom') await bom.startTurn(this.mc(), state);
         else if (state.mode === 'telepati') await telepati.startQuestion(this.mc(), state);
         else if (state.mode === 'kor_siralama') await korSiralama.startItem(this.mc(), state);
+        else if (state.mode === 'beni_yakala') await beniYakala.startAnswer(this.mc(), state);
         else await this.startRacing(state); // harf
         break;
       case 'racing': {
@@ -655,6 +680,15 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'kor_reveal':
         await korSiralama.onRevealDone(this.mc(), state);
+        break;
+      case 'beni_yakala_answer':
+        await beniYakala.onAnswerDeadline(this.mc(), state);
+        break;
+      case 'beni_yakala_predict':
+        await beniYakala.onPredictDeadline(this.mc(), state);
+        break;
+      case 'beni_yakala_reveal':
+        await beniYakala.onRevealDone(this.mc(), state);
         break;
       case 'round_end':
         if (state.mode === 'sayi') {
@@ -745,6 +779,7 @@ export class GameRoom extends DurableObject<Env> {
       state.bom ??= null;
       state.telepati ??= null;
       state.korSiralama ??= null;
+      state.beniYakala ??= null;
     }
     return state;
   }
@@ -877,6 +912,8 @@ export class GameRoom extends DurableObject<Env> {
           }
         : null;
 
+    const beniYakalaSnap = beniYakala.toBeniYakalaSnapshot(state, you);
+
     // Bom: gizli alan yok; sunucu durumu oldugu gibi gorunur.
     const bomSnap = state.bom
       ? {
@@ -915,6 +952,7 @@ export class GameRoom extends DurableObject<Env> {
       bom: bomSnap,
       telepati: telepatiSnap,
       korSiralama: korSnap,
+      beniYakala: beniYakalaSnap,
     };
   }
 }

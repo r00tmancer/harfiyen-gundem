@@ -66,6 +66,7 @@ function stateForRank(): RoomState {
       exactMatches: 0,
       compatibility: null,
     },
+    beniYakala: null,
   };
 }
 

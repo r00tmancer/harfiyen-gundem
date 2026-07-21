@@ -1,4 +1,6 @@
 import {
+  BENI_YAKALA_OPTION_COUNT,
+  BENI_YAKALA_ROUNDS,
   KOR_SIRALAMA_ITEMS,
   REACTION_COUNT,
   SAYI_MAX,
@@ -30,6 +32,7 @@ const GAME_MODES = {
   bom: true,
   telepati: true,
   kor_siralama: true,
+  beni_yakala: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -116,6 +119,20 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         typeof value.item === 'string' &&
         value.item.length > 0
         ? { t: 'kor_pass', itemIndex: value.itemIndex, item: value.item }
+        : null;
+
+    case 'beni_yakala_answer':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isIntegerInRange(value.choice, 0, BENI_YAKALA_OPTION_COUNT - 1) &&
+        isIntegerInRange(value.round, 1, BENI_YAKALA_ROUNDS)
+        ? { t: 'beni_yakala_answer', choice: value.choice, round: value.round }
+        : null;
+
+    case 'beni_yakala_predict':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isIntegerInRange(value.choice, 0, BENI_YAKALA_OPTION_COUNT - 1) &&
+        isIntegerInRange(value.round, 1, BENI_YAKALA_ROUNDS)
+        ? { t: 'beni_yakala_predict', choice: value.choice, round: value.round }
         : null;
 
     case 'use_joker':

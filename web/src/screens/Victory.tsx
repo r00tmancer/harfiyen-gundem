@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BOM_LIVES, KOR_SIRALAMA_ITEMS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import { BENI_YAKALA_ROUNDS, BOM_LIVES, KOR_SIRALAMA_ITEMS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
 import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
@@ -12,6 +12,7 @@ import { heartRain, paletteFor, rain } from '../fx/confetti';
 import { haptics } from '../fx/haptics';
 import { up } from '../hooks';
 import { createKorShareCard } from '../share/korSiralamaCard';
+import { createBeniYakalaShareCard } from '../share/beniYakalaCard';
 import { PUBLIC_URL } from '../config';
 
 const GAME_URL = PUBLIC_URL;
@@ -93,6 +94,10 @@ function isKoopKorSiralama(snap: RoomSnapshot): boolean {
   return snap.mode === 'kor_siralama' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopBeniYakala(snap: RoomSnapshot): boolean {
+  return snap.mode === 'beni_yakala' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -101,6 +106,11 @@ function telepatiPct(snap: RoomSnapshot): number {
 
 function korSiralamaPct(snap: RoomSnapshot): number {
   return snap.korSiralama?.compatibility ?? 0;
+}
+
+function beniYakalaPct(snap: RoomSnapshot): number {
+  const reads = Object.values(snap.beniYakala?.reads ?? {});
+  return Math.round((Math.max(0, ...reads) / BENI_YAKALA_ROUNDS) * 100);
 }
 
 function uyumTitle(pct: number): string {
@@ -151,7 +161,15 @@ function scorelineOf(snap: RoomSnapshot): string {
 
 // Paylas: moda ozel PNG varsa iPhone share sheet'e dosya olarak verir; destek
 // yoksa gorseli indirir ve metni panoya kopyalar. Diger modlar metinle devam eder.
-function ShareButton({ text, makeFile }: { text: string; makeFile?: () => Promise<File> }) {
+function ShareButton({
+  text,
+  title = 'Harfiyen Sonucu',
+  makeFile,
+}: {
+  text: string;
+  title?: string;
+  makeFile?: () => Promise<File>;
+}) {
   const [status, setStatus] = useState<'copied' | 'downloaded' | 'error' | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -175,11 +193,11 @@ function ShareButton({ text, makeFile }: { text: string; makeFile?: () => Promis
         typeof navigator.canShare === 'function' &&
         navigator.canShare({ files: [file] })
       ) {
-        await navigator.share({ title: 'Kör Sıralama Sonucu', text, files: [file] });
+        await navigator.share({ title, text, files: [file] });
         return;
       }
       if (typeof navigator.share === 'function' && !file) {
-        await navigator.share({ text });
+        await navigator.share({ title, text });
         return;
       }
 
@@ -246,10 +264,14 @@ export default function Victory() {
     // matchEndSeq 0 ise mac sonu mesaji bu oturumda gelmedi (sayfa yenileme) — kutlama yok
     if (!snapshot || matchEndSeq === 0 || matchEndSeq === celebratedSeq) return;
     // ko-op modlar: kazanan yok, yuksek uyumda kalp yagmuru
-    if (isKoopTelepati(snapshot) || isKoopKorSiralama(snapshot)) {
+    if (isKoopTelepati(snapshot) || isKoopKorSiralama(snapshot) || isKoopBeniYakala(snapshot)) {
       celebratedSeq = matchEndSeq;
       haptics.victory();
-      const pct = isKoopTelepati(snapshot) ? telepatiPct(snapshot) : korSiralamaPct(snapshot);
+      const pct = isKoopTelepati(snapshot)
+        ? telepatiPct(snapshot)
+        : isKoopKorSiralama(snapshot)
+          ? korSiralamaPct(snapshot)
+          : beniYakalaPct(snapshot);
       if (pct >= 70) heartRain();
       return;
     }
@@ -273,7 +295,9 @@ export default function Victory() {
     ? `Telepati testinde uyumumuz %${telepatiPct(snapshot)} çıktı! Siz de deneyin: ${GAME_URL}`
     : isKoopKorSiralama(snapshot)
       ? `Kör Sıralama'da listelerimiz %${korSiralamaPct(snapshot)} uydu! Siz de geleceği görmeden sıralayın: ${GAME_URL}`
-    : iWon && opp
+      : isKoopBeniYakala(snapshot) && me && opp
+        ? `Beni Yakala'da ${opp.nick} kalbimi ${snapshot.beniYakala?.reads[opp.id] ?? 0}/${BENI_YAKALA_ROUNDS} okudu! Siz de deneyin: ${GAME_URL}`
+      : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
 
@@ -290,6 +314,24 @@ export default function Victory() {
             playerB: { name: opp.nick, ranking: kor.finalRankings?.[opp.id] ?? [] },
           })
       : undefined;
+
+  const beni = snapshot.beniYakala;
+  const makeBeniShareFile =
+    isKoopBeniYakala(snapshot) && me && opp && beni
+      ? () =>
+          createBeniYakalaShareCard({
+            myName: me.nick,
+            partnerName: opp.nick,
+            myReads: beni.reads[me.id] ?? 0,
+            partnerReads: beni.reads[opp.id] ?? 0,
+            url: GAME_URL,
+          })
+      : undefined;
+  const shareTitle = isKoopBeniYakala(snapshot)
+    ? 'Beni Yakala Sonucu'
+    : isKoopKorSiralama(snapshot)
+      ? 'Kör Sıralama Sonucu'
+      : 'Harfiyen Sonucu';
 
   // rovans/paylas/yeni oda + durum rozetleri: iki varyantta da ayni
   const footer = (
@@ -317,7 +359,7 @@ export default function Victory() {
           {mineWant ? `Rövanş istendi (${rematchWants.length}/2)` : 'Rövanş'}
         </button>
         {/* ikincil aksiyon: rovansin altinda */}
-        <ShareButton text={shareMsg} makeFile={makeKorShareFile} />
+        <ShareButton text={shareMsg} title={shareTitle} makeFile={makeBeniShareFile ?? makeKorShareFile} />
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
         </button>
@@ -432,6 +474,69 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op beni yakala: iki yonlu kalp okuma skoru ----
+  if (isKoopBeniYakala(snapshot)) {
+    const b = snapshot.beniYakala;
+    const myReads = me ? (b?.reads[me.id] ?? 0) : 0;
+    const partnerReads = opp ? (b?.reads[opp.id] ?? 0) : 0;
+    return (
+      <div ref={root} className="flex w-full flex-col items-center gap-5 pt-8 pb-6 text-center">
+        <WinWash mine={false} />
+
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={62} />}
+          <span className="inline-flex" style={{ color: 'var(--p1)' }} aria-hidden="true">
+            <IconHeartSolid size={38} />
+          </span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={62}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <h1 data-pop className="font-display text-4xl leading-tight font-extrabold">
+          Kalp Okuma Sonucu
+        </h1>
+        <div data-pop className="chip chip-soft">
+          {MODE_META.beni_yakala.name}
+          {opp ? ` — ${me?.nick ?? ''} + ${opp.nick}` : ''}
+        </div>
+
+        <div data-pop className="beni-final-card card-candy w-full text-center">
+          <p className="text-[13px] font-extrabold tracking-wide uppercase" style={{ color: 'var(--p1-dark)' }}>
+            {opp?.nick ?? 'Partnerin'}
+          </p>
+          <p className="mt-1 font-display text-[30px] leading-tight font-extrabold">Kalbimi</p>
+          <p className="beni-final-score" aria-label={`Beş üzerinden ${partnerReads}`}>
+            {partnerReads}/{BENI_YAKALA_ROUNDS}
+          </p>
+          <p className="font-display text-[30px] leading-tight font-extrabold">okudun!</p>
+          <p className="mt-4 flex justify-center">
+            <span className="chip chip-p2 font-display text-sm">
+              Ben de seninkini {myReads}/{BENI_YAKALA_ROUNDS} okudum
+            </span>
+          </p>
+        </div>
+
+        <div data-pop className="flex flex-wrap justify-center gap-2">
+          <span className="chip chip-p1">
+            <IconHeartSolid size={14} /> {b?.mutualReads ?? 0} turda karşılıklı bildiniz
+          </span>
+          <span className="chip chip-sun">{b?.exactMatches ?? 0} aynı cevap</span>
+        </div>
+
+        <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
+          Story görselinde yalnızca isimler ve toplam skorlar yer alır; özel cevaplarınız paylaşılmaz.
         </p>
         {footer}
       </div>

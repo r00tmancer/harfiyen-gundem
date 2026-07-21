@@ -6,7 +6,8 @@
 
 ## Oyunlar
 
-- **Kör Sıralama — yeni:** Beş sürpriz seçenek tek tek gelir. Geleceği bilmeden 1–5 arasına kilitleyin; listeler açılınca uyum yüzdesini Story görseli olarak paylaşın.
+- **Beni Yakala — yeni:** Önce kendi tercihini gizlice seç, sonra sevgilinin cevabını tahmin et. Beş turun sonunda kalp okuma skorunu Story görseli olarak paylaş.
+- **Kör Sıralama:** Beş sürpriz seçenek tek tek gelir. Geleceği bilmeden 1–5 arasına kilitleyin; listeler açılınca uyum yüzdesini Story görseli olarak paylaşın.
 - **Telepati:** Aynı sorulara gizlice cevap verip ortak uyumu ölçün.
 - **Harf Yarışı, Sayı Avı, Kelime Zinciri, En Uzun Kelime ve Bom:** Rekabetçi kısa oyunlar.
 
