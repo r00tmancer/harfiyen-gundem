@@ -21,14 +21,16 @@ export default function App() {
   const screen = useStore((s) => s.screen);
   const mode = useStore((s) => s.snapshot?.mode);
   const darkRandevu = mode === 'randevu_ruleti' && (screen === 'game' || screen === 'victory');
+  const darkEmoji = mode === 'emoji_sifre' && (screen === 'game' || screen === 'victory');
+  const darkMode = darkRandevu || darkEmoji;
 
   useEffect(() => {
     const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const statusBar = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]');
-    theme?.setAttribute('content', darkRandevu ? '#09071A' : '#FFF6EC');
-    statusBar?.setAttribute('content', darkRandevu ? 'black-translucent' : 'default');
-    document.documentElement.style.colorScheme = darkRandevu ? 'dark' : 'light';
-  }, [darkRandevu]);
+    theme?.setAttribute('content', darkEmoji ? '#0C0920' : darkRandevu ? '#09071A' : '#FFF6EC');
+    statusBar?.setAttribute('content', darkMode ? 'black-translucent' : 'default');
+    document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
+  }, [darkEmoji, darkMode, darkRandevu]);
 
   return (
     <>

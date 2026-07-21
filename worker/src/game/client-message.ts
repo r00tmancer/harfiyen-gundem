@@ -1,6 +1,10 @@
 import {
   BENI_YAKALA_OPTION_COUNT,
   BENI_YAKALA_ROUNDS,
+  EMOJI_SIFRE_CODE_COUNT,
+  EMOJI_SIFRE_OPTION_COUNT,
+  EMOJI_SIFRE_PALETTE,
+  EMOJI_SIFRE_ROUNDS,
   KOR_SIRALAMA_ITEMS,
   RANDEVU_RULETI_CHOICE_COUNT,
   RANDEVU_RULETI_ROUNDS,
@@ -10,7 +14,7 @@ import {
   TR_LETTERS,
   normalizeTr,
 } from '@harfiyen/shared';
-import type { ClientMsg, GameMode } from '@harfiyen/shared';
+import type { ClientMsg, EmojiSifreCode, GameMode } from '@harfiyen/shared';
 
 // Normal oyun hamleleri birkac yuz byte'i gecmez. Sinir, JSON.parse oncesinde
 // uygulanir; boylece istemci tek cerceveyle DO'ya sinirsiz ayrıştırma isi veremez.
@@ -36,6 +40,7 @@ const GAME_MODES = {
   kor_siralama: true,
   beni_yakala: true,
   randevu_ruleti: true,
+  emoji_sifre: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -62,6 +67,14 @@ function isPlayableLetter(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   const normalized = normalizeTr(value);
   return TR_LETTERS.some((letter) => letter === normalized);
+}
+
+function isEmojiSifreCode(value: unknown): value is EmojiSifreCode {
+  return (
+    Array.isArray(value) &&
+    value.length === EMOJI_SIFRE_CODE_COUNT &&
+    value.every((entry) => isIntegerInRange(entry, 0, EMOJI_SIFRE_PALETTE.length - 1))
+  );
 }
 
 function validateParsedMessage(value: unknown): ClientMsg | null {
@@ -143,6 +156,20 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         isIntegerInRange(value.choice, 0, RANDEVU_RULETI_CHOICE_COUNT - 1) &&
         isIntegerInRange(value.round, 1, RANDEVU_RULETI_ROUNDS)
         ? { t: 'randevu_ruleti_pick', choice: value.choice, round: value.round }
+        : null;
+
+    case 'emoji_sifre_code':
+      return hasExactKeys(value, ['t', 'emojis', 'round']) &&
+        isEmojiSifreCode(value.emojis) &&
+        isIntegerInRange(value.round, 1, EMOJI_SIFRE_ROUNDS)
+        ? { t: 'emoji_sifre_code', emojis: value.emojis, round: value.round }
+        : null;
+
+    case 'emoji_sifre_guess':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isIntegerInRange(value.choice, 0, EMOJI_SIFRE_OPTION_COUNT - 1) &&
+        isIntegerInRange(value.round, 1, EMOJI_SIFRE_ROUNDS)
+        ? { t: 'emoji_sifre_guess', choice: value.choice, round: value.round }
         : null;
 
     case 'use_joker':

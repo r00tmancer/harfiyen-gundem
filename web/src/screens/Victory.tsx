@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { BENI_YAKALA_ROUNDS, BOM_LIVES, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import { BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
 import type { PlayerPublic, RandevuCategory, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconHeartSolid, IconRanking, IconRoulette, IconShare } from '../ui/icons';
+import { IconEmojiCode, IconHeartSolid, IconRanking, IconRoulette, IconShare } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
@@ -14,6 +14,7 @@ import { up } from '../hooks';
 import { createKorShareCard } from '../share/korSiralamaCard';
 import { createBeniYakalaShareCard } from '../share/beniYakalaCard';
 import { createRandevuRuletiShareCard } from '../share/randevuRuletiCard';
+import { createEmojiSifreShareCard } from '../share/emojiSifreCard';
 import { PUBLIC_URL } from '../config';
 
 const GAME_URL = PUBLIC_URL;
@@ -103,6 +104,10 @@ function isKoopRandevuRuleti(snap: RoomSnapshot): boolean {
   return snap.mode === 'randevu_ruleti' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopEmojiSifre(snap: RoomSnapshot): boolean {
+  return snap.mode === 'emoji_sifre' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -120,6 +125,10 @@ function beniYakalaPct(snap: RoomSnapshot): number {
 
 function randevuRuletiPct(snap: RoomSnapshot): number {
   return Math.round(((snap.randevuRuleti?.matches ?? 0) / RANDEVU_RULETI_ROUNDS) * 100);
+}
+
+function emojiSifrePct(snap: RoomSnapshot): number {
+  return Math.round(((snap.emojiSifre?.correctCount ?? 0) / EMOJI_SIFRE_ROUNDS) * 100);
 }
 
 function randevuCategoryLabel(category: RandevuCategory): string {
@@ -284,7 +293,8 @@ export default function Victory() {
       isKoopTelepati(snapshot) ||
       isKoopKorSiralama(snapshot) ||
       isKoopBeniYakala(snapshot) ||
-      isKoopRandevuRuleti(snapshot)
+      isKoopRandevuRuleti(snapshot) ||
+      isKoopEmojiSifre(snapshot)
     ) {
       celebratedSeq = matchEndSeq;
       haptics.victory();
@@ -294,7 +304,9 @@ export default function Victory() {
           ? korSiralamaPct(snapshot)
           : isKoopBeniYakala(snapshot)
             ? beniYakalaPct(snapshot)
-            : randevuRuletiPct(snapshot);
+            : isKoopRandevuRuleti(snapshot)
+              ? randevuRuletiPct(snapshot)
+              : emojiSifrePct(snapshot);
       if (pct >= 70) heartRain();
       return;
     }
@@ -322,6 +334,8 @@ export default function Victory() {
         ? `Beni Yakala'da ${opp.nick} kalbimi ${snapshot.beniYakala?.reads[opp.id] ?? 0}/${BENI_YAKALA_ROUNDS} okudu! Siz de deneyin: ${GAME_URL}`
       : isKoopRandevuRuleti(snapshot)
         ? `Randevu Ruleti planımız hazır: ${snapshot.randevuRuleti?.plan.map((item) => item.label).join(' → ') ?? 'sürpriz randevu'} · ${snapshot.randevuRuleti?.matches ?? 0}/${RANDEVU_RULETI_ROUNDS} aynı seçim! Siz de deneyin: ${GAME_URL}`
+      : isKoopEmojiSifre(snapshot)
+        ? `Emoji Şifre'de ${snapshot.emojiSifre?.correctCount ?? 0}/${EMOJI_SIFRE_ROUNDS} ortak şifre çözdük! Siz de üç emojiyle anlatın: ${GAME_URL}`
       : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
@@ -367,7 +381,30 @@ export default function Victory() {
             url: GAME_URL,
           })
       : undefined;
-  const shareTitle = isKoopRandevuRuleti(snapshot)
+  const emoji = snapshot.emojiSifre;
+  const makeEmojiShareFile =
+    isKoopEmojiSifre(snapshot) && me && opp && emoji
+      ? () =>
+          createEmojiSifreShareCard({
+            playerA: me.nick,
+            playerB: opp.nick,
+            correct: emoji.correctCount,
+            // Yalnız açılmış history aktarılır; aktif hedef/kod Story API'sine giremez.
+            revealedRounds: emoji.history.map((round) => ({
+              target: round.target,
+              emojis: round.code.map((index) => EMOJI_SIFRE_PALETTE[index]) as [string, string, string],
+              status: round.codeFallback && round.guess !== null && round.guess === round.correctChoice
+                ? 'assisted'
+                : round.correct
+                  ? 'solved'
+                  : 'miss',
+            })),
+            url: GAME_URL,
+          })
+      : undefined;
+  const shareTitle = isKoopEmojiSifre(snapshot)
+    ? 'Emoji Şifre Sonucu'
+    : isKoopRandevuRuleti(snapshot)
     ? 'Randevu Ruleti Sonucu'
     : isKoopBeniYakala(snapshot)
       ? 'Beni Yakala Sonucu'
@@ -404,7 +441,7 @@ export default function Victory() {
         <ShareButton
           text={shareMsg}
           title={shareTitle}
-          makeFile={makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
+          makeFile={makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
         />
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
@@ -520,6 +557,70 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op emoji sifre: yalniz acilmis dort turun ortak sonucu ----
+  if (isKoopEmojiSifre(snapshot)) {
+    const e = snapshot.emojiSifre;
+    const score = e?.correctCount ?? 0;
+    const history = e?.history ?? [];
+    const resultTitle = score === 4
+      ? 'Aynı dili konuşuyorsunuz!'
+      : score >= 2
+        ? 'Mesaj alındı!'
+        : 'Şifre biraz karıştı…';
+    return (
+      <div ref={root} className="emoji-shell emoji-victory flex w-full flex-col items-center gap-4 pt-5 pb-6 text-center">
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="emoji-final-icon" aria-hidden="true"><IconEmojiCode size={39} /></span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <div data-pop>
+          <p className="emoji-final-kicker">Dört mesaj da açıldı</p>
+          <h1 className="font-display text-[34px] leading-none font-extrabold">{resultTitle}</h1>
+        </div>
+        <div data-pop className="emoji-final-names">
+          {MODE_META.emoji_sifre.name}
+          {opp ? ` · ${me?.nick ?? ''} + ${opp.nick}` : ''}
+        </div>
+
+        <div data-pop className="emoji-final-score" role="status" aria-label={`Dört üzerinden ${score} ortak şifre`}>
+          <strong>{score}/{EMOJI_SIFRE_ROUNDS}</strong>
+          <span>ortak şifre</span>
+        </div>
+
+        <ol data-pop className="emoji-final-history" aria-label="Açılmış emoji şifreleri">
+          {Array.from({ length: EMOJI_SIFRE_ROUNDS }, (_, index) => {
+            const round = history[index];
+            const assisted = !!round?.codeFallback && round.guess !== null && round.guess === round.correctChoice;
+            return (
+              <li key={round?.round ?? index} className={round?.correct ? 'correct' : assisted ? 'assisted' : 'wrong'}>
+                <span>{round?.correct ? '✓' : assisted ? '✦' : '×'}</span>
+                <div>
+                  <small>{round ? round.code.map((value) => EMOJI_SIFRE_PALETTE[value]).join(' ') : '❔ ❔ ❔'}</small>
+                  <strong>{round?.target ?? 'Sürpriz kelime'}</strong>
+                </div>
+                <i>{assisted ? 'İPUCU' : index + 1}</i>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p data-pop className="emoji-story-privacy">
+          Story'de yalnız isimler, ortak skor ve açılmış emoji kodları yer alır. Gizli aktif seçim paylaşılmaz.
         </p>
         {footer}
       </div>

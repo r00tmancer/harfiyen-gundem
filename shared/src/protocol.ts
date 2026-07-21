@@ -25,7 +25,8 @@ export type GameMode =
   | 'telepati'
   | 'kor_siralama'
   | 'beni_yakala'
-  | 'randevu_ruleti';
+  | 'randevu_ruleti'
+  | 'emoji_sifre';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -50,6 +51,19 @@ export const RANDEVU_RULETI_ROUNDS = 3;
 export const RANDEVU_RULETI_CHOICE_COUNT = 6;
 export const RANDEVU_RULETI_PICK_MS = 12_000;
 export const RANDEVU_RULETI_REVEAL_MS = 3_200;
+
+// Emoji Sifre — kodlayici hedefi tam uc emojiyle anlatir, cozucu dort sik arasindan bulur
+export const EMOJI_SIFRE_ROUNDS = 4;
+export const EMOJI_SIFRE_CODE_COUNT = 3;
+export const EMOJI_SIFRE_OPTION_COUNT = 4;
+export const EMOJI_SIFRE_CODE_MS = 18_000;
+export const EMOJI_SIFRE_GUESS_MS = 12_000;
+export const EMOJI_SIFRE_REVEAL_MS = 3_200;
+export const EMOJI_SIFRE_PALETTE = [
+  '😂', '🥰', '😴', '🤫', '❤️', '🔥', '🎉', '🌙',
+  '⭐', '🍕', '☕', '🎬', '🎮', '🚀', '🏠', '🌊',
+  '🐱', '🎁', '📱', '🌧️', '🚗', '🍦', '🎵', '💃',
+] as const;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -99,6 +113,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   kor_siralama: 'pas', // mevcut karti sona atar; siradaki kart bilinmez
   beni_yakala: null, // bu modda joker yok
   randevu_ruleti: null, // bu modda joker yok
+  emoji_sifre: null, // bu kisa co-op modunda joker yok
 };
 
 export const TR_LETTERS = [
@@ -151,6 +166,9 @@ export type Phase =
   | 'beni_yakala_reveal' // (beni yakala) cevaplar ve tahminler aciliyor
   | 'randevu_secim' // (randevu ruleti) iki oyuncu gizli secimini kilitliyor
   | 'randevu_reveal' // (randevu ruleti) secimler ve ortak sonuc aciliyor
+  | 'emoji_sifre_encode' // (emoji sifre) kodlayici hedefi uc emojiyle anlatiyor
+  | 'emoji_sifre_guess' // (emoji sifre) cozucu dort secenekten tahmin ediyor
+  | 'emoji_sifre_reveal' // (emoji sifre) hedef, kod ve tahmin aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -286,6 +304,39 @@ export interface RandevuRuletiState {
   reveal: RandevuRuletiReveal | null; // aktif tur yalniz reveal/match_end fazinda acilir
 }
 
+export type EmojiSifreRole = 'encoder' | 'decoder';
+export type EmojiSifreCode = [number, number, number];
+export type EmojiSifreOptions = [string, string, string, string];
+
+export interface EmojiSifreReveal {
+  round: number;
+  encoder: string;
+  decoder: string;
+  target: string;
+  options: EmojiSifreOptions;
+  code: EmojiSifreCode;
+  guess: number | null; // 0..3; timeout = null
+  correctChoice: number;
+  correct: boolean;
+  codeFallback: boolean; // kodlayici timeout olduysa sunucunun hazir kodu kullanildi
+}
+
+export interface EmojiSifreState {
+  round: number; // 1..EMOJI_SIFRE_ROUNDS
+  encoder: string;
+  decoder: string;
+  role: EmojiSifreRole;
+  target: string | null; // encode/guess fazinda yalniz kodlayici; reveal'de ortak
+  options: EmojiSifreOptions | null; // guess fazinda yalniz cozucu; reveal'de ortak
+  code: EmojiSifreCode | null; // encode fazinda cozucuden gizli; guess'te iki tarafa acik
+  codeLocked: boolean;
+  guessLocked: boolean;
+  myGuess: number | null; // reveal oncesi yalniz cozucunun kendi tahmini
+  correctCount: number; // ortak dogru sayisi; iki oyuncunun score alaniyla ayni
+  history: EmojiSifreReveal[];
+  reveal: EmojiSifreReveal | null;
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -318,6 +369,7 @@ export interface RoomSnapshot {
   korSiralama: KorSiralamaState | null;
   beniYakala: BeniYakalaState | null;
   randevuRuleti: RandevuRuletiState | null;
+  emojiSifre: EmojiSifreState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -335,6 +387,8 @@ export type ClientMsg =
   | { t: 'beni_yakala_answer'; choice: number; round: number } // choice 0..3; stale tur reddedilir
   | { t: 'beni_yakala_predict'; choice: number; round: number } // partner tahmini; stale tur reddedilir
   | { t: 'randevu_ruleti_pick'; choice: number; round: number } // choice 0..5; stale tur reddedilir
+  | { t: 'emoji_sifre_code'; emojis: EmojiSifreCode; round: number } // ayni emoji birden cok kez kullanilabilir
+  | { t: 'emoji_sifre_guess'; choice: number; round: number } // choice 0..3; stale tur reddedilir
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

@@ -14,6 +14,7 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'ready' },
     { t: 'set_mode', mode: 'kor_siralama' },
     { t: 'set_mode', mode: 'randevu_ruleti' },
+    { t: 'set_mode', mode: 'emoji_sifre' },
     { t: 'pick_letter', letter: 'İ' },
     { t: 'submit_word', word: 'incir' },
     { t: 'pick_number', value: 1 },
@@ -27,6 +28,10 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'beni_yakala_answer', choice: 0, round: 1 },
     { t: 'beni_yakala_predict', choice: 3, round: 5 },
     { t: 'randevu_ruleti_pick', choice: 5, round: 3 },
+    { t: 'emoji_sifre_code', emojis: [0, 0, 0], round: 1 },
+    { t: 'emoji_sifre_code', emojis: [23, 12, 0], round: 4 },
+    { t: 'emoji_sifre_guess', choice: 0, round: 1 },
+    { t: 'emoji_sifre_guess', choice: 3, round: 4 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -172,6 +177,43 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
       { t: 'randevu_ruleti_pick', choice: 0, round: '1' },
       { t: 'randevu_ruleti_pick', choice: 0 },
       { t: 'randevu_ruleti_pick', choice: 0, round: 1, admin: true },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('emoji sifre kodunu exact-key, tam uc allowlist indeksi ve 1..4 tur ile sinirlar', () => {
+    const invalid = [
+      { t: 'emoji_sifre_code', emojis: [0, 1], round: 1 },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 2, 3], round: 1 },
+      { t: 'emoji_sifre_code', emojis: [-1, 0, 1], round: 1 },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 24], round: 1 },
+      { t: 'emoji_sifre_code', emojis: [0, 1.5, 2], round: 1 },
+      { t: 'emoji_sifre_code', emojis: [0, '1', 2], round: 1 },
+      { t: 'emoji_sifre_code', emojis: '0,1,2', round: 1 },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 2], round: 0 },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 2], round: 5 },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 2], round: 1.5 },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 2] },
+      { t: 'emoji_sifre_code', emojis: [0, 1, 2], round: 1, admin: true },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('emoji sifre tahminini exact-key 0..3 / 1..4 araliginda dogrular', () => {
+    const invalid = [
+      { t: 'emoji_sifre_guess', choice: -1, round: 1 },
+      { t: 'emoji_sifre_guess', choice: 4, round: 1 },
+      { t: 'emoji_sifre_guess', choice: 1.5, round: 1 },
+      { t: 'emoji_sifre_guess', choice: '1', round: 1 },
+      { t: 'emoji_sifre_guess', choice: 0, round: 0 },
+      { t: 'emoji_sifre_guess', choice: 0, round: 5 },
+      { t: 'emoji_sifre_guess', choice: 0, round: 1.5 },
+      { t: 'emoji_sifre_guess', choice: 0 },
+      { t: 'emoji_sifre_guess', choice: 0, round: 1, extra: null },
     ];
     for (const value of invalid) {
       expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });

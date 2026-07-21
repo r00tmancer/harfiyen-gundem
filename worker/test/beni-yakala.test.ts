@@ -70,6 +70,7 @@ function gameState(phase: RoomState['phase'] = 'beni_yakala_answer'): RoomState 
       reveal: null,
     },
     randevuRuleti: null,
+    emojiSifre: null,
   };
 }
 

@@ -235,6 +235,20 @@ export function IconRoulette({ size = 22, ...props }: { size?: number } & SVGPro
   );
 }
 
+// iki sohbet balonunda sifre: Emoji Sifre modu
+export function IconEmojiCode({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <path d="M3 4.5h11.8a2.7 2.7 0 0 1 2.7 2.7v4a2.7 2.7 0 0 1-2.7 2.7H9l-3.7 2.8.7-2.8H3A2.5 2.5 0 0 1 .5 11.4V7A2.5 2.5 0 0 1 3 4.5z" fill="currentColor" fillOpacity={0.13} />
+      <path d="M10.2 16h7.6l3.1 2.4-.6-2.4h.7a2.5 2.5 0 0 0 2.5-2.5V10a2.5 2.5 0 0 0-2.5-2.5h-1" />
+      <circle cx="5.2" cy="9.2" r="1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="9.2" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12.8" cy="9.2" r="1" fill="currentColor" stroke="none" />
+      <path d="M14.2 11.1l1.2 1.2 2.5-2.7" strokeWidth={1.8} />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

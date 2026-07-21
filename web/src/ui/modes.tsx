@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconHeartsDuo, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
+import { IconBomb, IconBurst, IconEmojiCode, IconHeartsDuo, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -61,8 +61,14 @@ export const MODE_META: Record<GameMode, ModeMeta> = {
     name: 'Randevu Ruleti',
     desc: 'Gizlice seçin; üç tur sonunda bu geceki planınız hazır.',
     joker: 'Yemek · Etkinlik · Tatlı',
-    badge: 'YENİ · 1 DK',
     Icon: IconRoulette,
+  },
+  emoji_sifre: {
+    name: 'Emoji Şifre',
+    desc: 'Üç emojiyle anlat; sevgilin gizli kelimeyi çözsün.',
+    joker: '4 tur · Kodla ve çöz',
+    badge: 'YENİ · 1 DK',
+    Icon: IconEmojiCode,
   },
   kor_siralama: {
     name: 'Kör Sıralama',

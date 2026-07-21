@@ -86,6 +86,7 @@ function stateForGame(phase: RoomState['phase'] = 'randevu_secim'): RoomState {
       history: [],
       reveal: null,
     },
+    emojiSifre: null,
   };
 }
 

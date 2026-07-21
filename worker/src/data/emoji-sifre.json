@@ -1,0 +1,142 @@
+[
+  {
+    "target": "İlk buluşma",
+    "distractors": ["Film gecesi", "Kahve molası", "Yolculuk"],
+    "fallback": [1, 10, 4]
+  },
+  {
+    "target": "Gece mesajı",
+    "distractors": ["Sabah alarmı", "Gizli sır", "Telefon görüşmesi"],
+    "fallback": [7, 18, 4]
+  },
+  {
+    "target": "Sarılmak",
+    "distractors": ["Barışmak", "Özlemek", "Uyumak"],
+    "fallback": [4, 4, 1]
+  },
+  {
+    "target": "Kahve molası",
+    "distractors": ["Birlikte yemek", "Sabah alarmı", "Dondurma kaçamağı"],
+    "fallback": [10, 2, 4]
+  },
+  {
+    "target": "Film gecesi",
+    "distractors": ["Oyun gecesi", "Pizza gecesi", "Evde pijama"],
+    "fallback": [11, 7, 9]
+  },
+  {
+    "target": "Sürpriz hediye",
+    "distractors": ["Doğum günü", "İlk buluşma", "Gizli sır"],
+    "fallback": [17, 8, 1]
+  },
+  {
+    "target": "Sahil yürüyüşü",
+    "distractors": ["Gün batımı", "Tatil yolculuğu", "Yağmurlu gün"],
+    "fallback": [15, 7, 4]
+  },
+  {
+    "target": "Oyun gecesi",
+    "distractors": ["Film gecesi", "Birlikte dans", "Uzay mutfağı"],
+    "fallback": [12, 6, 0]
+  },
+  {
+    "target": "Pizza gecesi",
+    "distractors": ["Birlikte yemek", "Film gecesi", "Kahve molası"],
+    "fallback": [9, 5, 7]
+  },
+  {
+    "target": "Evde pijama",
+    "distractors": ["Film gecesi", "Uyumak", "Yağmurlu gün"],
+    "fallback": [14, 2, 1]
+  },
+  {
+    "target": "Özlemek",
+    "distractors": ["Sarılmak", "Barışmak", "Gece mesajı"],
+    "fallback": [4, 7, 18]
+  },
+  {
+    "target": "Barışmak",
+    "distractors": ["Gizli sır", "Sarılmak", "Kahkaha krizi"],
+    "fallback": [4, 3, 0]
+  },
+  {
+    "target": "Birlikte dans",
+    "distractors": ["Oyun gecesi", "Doğum günü", "İlk buluşma"],
+    "fallback": [23, 22, 1]
+  },
+  {
+    "target": "Tatil yolculuğu",
+    "distractors": ["Sahil yürüyüşü", "Gün batımı", "Uzay mutfağı"],
+    "fallback": [20, 15, 8]
+  },
+  {
+    "target": "Yağmurlu gün",
+    "distractors": ["Gün batımı", "Sahil yürüyüşü", "Evde pijama"],
+    "fallback": [19, 14, 10]
+  },
+  {
+    "target": "Sabah alarmı",
+    "distractors": ["Uyumak", "Kahve molası", "Gece mesajı"],
+    "fallback": [18, 2, 10]
+  },
+  {
+    "target": "Kedi videosu",
+    "distractors": ["Film gecesi", "Kahkaha krizi", "Oyun gecesi"],
+    "fallback": [16, 0, 18]
+  },
+  {
+    "target": "Yıldızları izlemek",
+    "distractors": ["Gün batımı", "Sahil yürüyüşü", "Gece mesajı"],
+    "fallback": [8, 7, 1]
+  },
+  {
+    "target": "Gizli sır",
+    "distractors": ["Gece mesajı", "Sürpriz hediye", "Telefon görüşmesi"],
+    "fallback": [3, 3, 4]
+  },
+  {
+    "target": "Birlikte yemek",
+    "distractors": ["Pizza gecesi", "Kahve molası", "Uzay mutfağı"],
+    "fallback": [9, 4, 1]
+  },
+  {
+    "target": "Doğum günü",
+    "distractors": ["Sürpriz hediye", "Birlikte dans", "İlk buluşma"],
+    "fallback": [6, 17, 8]
+  },
+  {
+    "target": "Uyumak",
+    "distractors": ["Evde pijama", "Sabah alarmı", "Özlemek"],
+    "fallback": [2, 7, 14]
+  },
+  {
+    "target": "Dondurma kaçamağı",
+    "distractors": ["Kahve molası", "Birlikte yemek", "Pizza gecesi"],
+    "fallback": [21, 0, 4]
+  },
+  {
+    "target": "Uzay mutfağı",
+    "distractors": ["Pizza gecesi", "Tatil yolculuğu", "Oyun gecesi"],
+    "fallback": [13, 9, 5]
+  },
+  {
+    "target": "Telefon görüşmesi",
+    "distractors": ["Gece mesajı", "Gizli sır", "Kahkaha krizi"],
+    "fallback": [18, 0, 4]
+  },
+  {
+    "target": "Kahkaha krizi",
+    "distractors": ["Kedi videosu", "Oyun gecesi", "Barışmak"],
+    "fallback": [0, 0, 1]
+  },
+  {
+    "target": "Gün batımı",
+    "distractors": ["Yıldızları izlemek", "Sahil yürüyüşü", "Yağmurlu gün"],
+    "fallback": [5, 15, 4]
+  },
+  {
+    "target": "Ev anahtarı",
+    "distractors": ["Gizli sır", "Sürpriz hediye", "Evde pijama"],
+    "fallback": [14, 3, 8]
+  }
+]

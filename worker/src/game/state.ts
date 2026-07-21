@@ -4,6 +4,9 @@
 import type {
   BeniYakalaQuestion,
   BeniYakalaReveal,
+  EmojiSifreCode,
+  EmojiSifreOptions,
+  EmojiSifreReveal,
   GameMode,
   KorSiralamaPack,
   Phase,
@@ -101,6 +104,26 @@ export interface RandevuRuletiServer {
   reveal: RandevuRuletiReveal | null;
 }
 
+export interface EmojiSifreServerRound {
+  target: string;
+  options: EmojiSifreOptions;
+  correctChoice: number;
+  fallback: EmojiSifreCode;
+}
+
+// Emoji Sifre: hedef/secenekler ve ham tahmin role gore recipient snapshot'ta
+// daraltilir. Kod, tahmin fazina gecene kadar cozucuden gizli tutulur.
+export interface EmojiSifreServer {
+  rounds: EmojiSifreServerRound[];
+  roundIndex: number; // 0 tabanli; players[roundIndex % 2] kodlayici
+  code: EmojiSifreCode | null;
+  codeFallback: boolean;
+  guess: number | null;
+  correctCount: number;
+  history: EmojiSifreReveal[];
+  reveal: EmojiSifreReveal | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -133,6 +156,7 @@ export interface RoomState {
   korSiralama: KorSiralamaServer | null;
   beniYakala: BeniYakalaServer | null;
   randevuRuleti: RandevuRuletiServer | null;
+  emojiSifre: EmojiSifreServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece
