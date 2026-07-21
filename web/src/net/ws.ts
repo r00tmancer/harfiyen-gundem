@@ -1,6 +1,7 @@
 import type { ClientMsg, ServerMsg } from '@harfiyen/shared';
 import { API_BASE, wsUrl } from '../config';
 import { useStore } from '../store';
+import { clearIkiDogruBirYalanDraftsForRoom } from '../drafts/ikiDogruBirYalanDraft';
 
 const RECONNECT_KEY_PREFIX = 'harfiyen:reconnect:v2:';
 const CLIENT_RATE_KEY = 'harfiyen:client-rate:v1';
@@ -138,6 +139,7 @@ function clearRoomHash(): void {
 
 // odayi bilerek terk et: soketi kapat, hash'i sil, ana ekrana don
 export function leaveRoom(): void {
+  const leavingCode = currentCode;
   manualClose = true;
   currentCode = null;
   if (retryTimer !== null) {
@@ -148,6 +150,7 @@ export function leaveRoom(): void {
     sock.close();
     sock = null;
   }
+  if (leavingCode) clearIkiDogruBirYalanDraftsForRoom(leavingCode);
   clearRoomHash();
   useStore.getState().leaveToHome();
 }

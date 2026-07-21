@@ -276,6 +276,20 @@ export function IconLikely({ size = 22, ...props }: { size?: number } & SVGProps
   );
 }
 
+// uc kapali karttan hangisinin yalan oldugunu arayan gece dedektifi
+export function IconTruthLie({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <rect x="2.3" y="5.1" width="6" height="13.8" rx="2.1" fill="currentColor" fillOpacity={0.1} />
+      <rect x="9" y="3.3" width="6" height="15.6" rx="2.1" fill="currentColor" fillOpacity={0.16} />
+      <rect x="15.7" y="5.1" width="6" height="13.8" rx="2.1" fill="currentColor" fillOpacity={0.1} />
+      <path d="M4.2 11.7l1.2 1.3 2-2.5M17.6 11.7l1.2 1.3 2-2.5" strokeWidth={1.7} />
+      <path d="M11.1 8.4c.2-1 1-1.6 1.9-1.6 1.1 0 1.9.7 1.9 1.7 0 1.5-1.9 1.5-1.9 3" strokeWidth={1.7} />
+      <circle cx="13" cy="14.5" r=".9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

@@ -89,6 +89,7 @@ function stateForGame(phase: RoomState['phase'] = 'kim_daha_muhtemel_vote'): Roo
       reveal: null,
       agreementPct: null,
     },
+    ikiDogruBirYalan: null,
   };
 }
 

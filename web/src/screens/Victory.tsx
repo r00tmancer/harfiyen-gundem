@@ -4,7 +4,7 @@ import type { PlayerPublic, RandevuCategory, RoomSnapshot } from '@harfiyen/shar
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconShare } from '../ui/icons';
+import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconShare, IconTruthLie } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
@@ -17,6 +17,8 @@ import { createRandevuRuletiShareCard } from '../share/randevuRuletiCard';
 import { createEmojiSifreShareCard } from '../share/emojiSifreCard';
 import { createKirmiziYesilShareCard } from '../share/kirmiziYesilCard';
 import { createKimDahaMuhtemelShareCard } from '../share/kimDahaMuhtemelCard';
+import { createIkiDogruBirYalanShareCard } from '../share/ikiDogruBirYalanCard';
+import { clearIkiDogruBirYalanDraft } from '../drafts/ikiDogruBirYalanDraft';
 import { PUBLIC_URL } from '../config';
 
 const GAME_URL = PUBLIC_URL;
@@ -118,6 +120,10 @@ function isKoopKimDahaMuhtemel(snap: RoomSnapshot): boolean {
   return snap.mode === 'kim_daha_muhtemel' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopIkiDogruBirYalan(snap: RoomSnapshot): boolean {
+  return snap.mode === 'iki_dogru_bir_yalan' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -155,6 +161,30 @@ function kimDahaMuhtemelPct(snap: RoomSnapshot): number {
   if (!game) return 0;
   return game.agreementPct
     ?? (game.jointRounds === 0 ? 0 : Math.round((game.agreements / game.jointRounds) * 100));
+}
+
+function ikiDogruBirYalanPct(snap: RoomSnapshot): number {
+  const game = snap.ikiDogruBirYalan;
+  if (!game) return 0;
+  return game.catchRate
+    ?? (game.attemptedCount === 0 ? 0 : Math.round((game.caughtCount / game.attemptedCount) * 100));
+}
+
+function ikiDogruBirYalanResult(
+  caughtCount: number,
+  attemptedCount: number,
+  availableRounds: number,
+): { title: string; subtitle: string } {
+  if (availableRounds < 2 || attemptedCount < 2) {
+    return { title: 'Tur yarım kaldı', subtitle: 'Gece özeti için iki paket ve iki tahmin de tamamlanmalıydı.' };
+  }
+  if (caughtCount >= 2) {
+    return { title: 'Yalan dedektifleri', subtitle: 'İki gizli yalan da gözünüzden kaçmadı.' };
+  }
+  if (caughtCount === 1) {
+    return { title: 'Biri yakalandı', subtitle: 'Bir yalan bulundu, biri poker yüzüne takıldı.' };
+  }
+  return { title: 'Poker yüzleri kazandı', subtitle: 'Bu gece iki yalan da sırrını korudu.' };
 }
 
 function kirmiziYesilResult(jointRounds: number, pct: number): { title: string; subtitle: string } {
@@ -376,9 +406,20 @@ export default function Victory() {
       isKoopRandevuRuleti(snapshot) ||
       isKoopEmojiSifre(snapshot) ||
       isKoopKirmiziYesil(snapshot) ||
-      isKoopKimDahaMuhtemel(snapshot)
+      isKoopKimDahaMuhtemel(snapshot) ||
+      isKoopIkiDogruBirYalan(snapshot)
     ) {
       celebratedSeq = matchEndSeq;
+      if (isKoopIkiDogruBirYalan(snapshot)) {
+        const fullTruthLieResult = (
+          (snapshot.ikiDogruBirYalan?.availableRounds ?? 0) >= 2
+          && (snapshot.ikiDogruBirYalan?.attemptedCount ?? 0) >= 2
+        );
+        if (!fullTruthLieResult) {
+          if ((snapshot.ikiDogruBirYalan?.availableRounds ?? 0) > 0) haptics.tick();
+          return;
+        }
+      }
       haptics.victory();
       const pct = isKoopTelepati(snapshot)
         ? telepatiPct(snapshot)
@@ -392,12 +433,19 @@ export default function Victory() {
                 ? emojiSifrePct(snapshot)
                 : isKoopKirmiziYesil(snapshot)
                   ? kirmiziYesilPct(snapshot)
-                  : kimDahaMuhtemelPct(snapshot);
+                  : isKoopKimDahaMuhtemel(snapshot)
+                    ? kimDahaMuhtemelPct(snapshot)
+                    : ikiDogruBirYalanPct(snapshot);
       const enoughFlagRounds = !isKoopKirmiziYesil(snapshot)
         || (snapshot.kirmiziYesil?.jointRounds ?? 0) >= 4;
       const enoughLikelyRounds = !isKoopKimDahaMuhtemel(snapshot)
         || (snapshot.kimDahaMuhtemel?.jointRounds ?? 0) >= 4;
-      if (pct >= 70 && enoughFlagRounds && enoughLikelyRounds) heartRain();
+      const enoughTruthLieRounds = !isKoopIkiDogruBirYalan(snapshot)
+        || (
+          (snapshot.ikiDogruBirYalan?.availableRounds ?? 0) >= 2
+          && (snapshot.ikiDogruBirYalan?.attemptedCount ?? 0) >= 2
+        );
+      if (pct >= 70 && enoughFlagRounds && enoughLikelyRounds && enoughTruthLieRounds) heartRain();
       return;
     }
     if (!winner) return;
@@ -430,6 +478,8 @@ export default function Victory() {
         ? `Kırmızı mı Yeşil mi? oyununda ${snapshot.kirmiziYesil?.matches ?? 0}/${KIRMIZI_YESIL_ROUNDS} aynı rengi seçtik! Siz de ilişki radarınızı açın: ${GAME_URL}`
       : isKoopKimDahaMuhtemel(snapshot)
         ? `Kim Daha Muhtemel? oyununda ${snapshot.kimDahaMuhtemel?.agreements ?? 0}/${KIM_DAHA_MUHTEMEL_ROUNDS} kez aynı hedefi gösterdik! Siz de deneyin: ${GAME_URL}`
+      : isKoopIkiDogruBirYalan(snapshot)
+        ? `İki Doğru Bir Yalan'da ${snapshot.ikiDogruBirYalan?.caughtCount ?? 0}/${snapshot.ikiDogruBirYalan?.availableRounds ?? 0} gizli yalanı yakaladık! Siz de deneyin: ${GAME_URL}`
       : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
@@ -546,7 +596,25 @@ export default function Victory() {
             url: GAME_URL,
           })
       : undefined;
-  const shareTitle = isKoopKimDahaMuhtemel(snapshot)
+  const truthLie = snapshot.ikiDogruBirYalan;
+  const makeTruthLieShareFile =
+    isKoopIkiDogruBirYalan(snapshot) && me && opp && truthLie && truthLie.availableRounds > 0
+      ? () =>
+          createIkiDogruBirYalanShareCard({
+            playerA: me.nick,
+            playerB: opp.nick,
+            caughtCount: truthLie.caughtCount,
+            wrongCount: truthLie.wrongCount,
+            skippedCount: truthLie.skippedCount,
+            attemptedCount: truthLie.attemptedCount,
+            availableRounds: truthLie.availableRounds,
+            catchRate: truthLie.catchRate ?? ikiDogruBirYalanPct(snapshot),
+            url: GAME_URL,
+          })
+      : undefined;
+  const shareTitle = isKoopIkiDogruBirYalan(snapshot)
+    ? 'İki Doğru Bir Yalan Sonucu'
+    : isKoopKimDahaMuhtemel(snapshot)
     ? 'Kim Daha Muhtemel? Sonucu'
     : isKoopKirmiziYesil(snapshot)
     ? 'Kırmızı mı Yeşil mi? Sonucu'
@@ -580,17 +648,22 @@ export default function Victory() {
           className="btn-candy btn-mint btn-lg btn-block"
           disabled={mineWant || !connected}
           onClick={() => {
+            if (isKoopIkiDogruBirYalan(snapshot)) {
+              clearIkiDogruBirYalanDraft(snapshot.code, snapshot.you);
+            }
             send({ t: 'rematch' });
           }}
         >
           {!connected ? 'Bağlanılıyor…' : mineWant ? `Rövanş istendi (${rematchWants.length}/2)` : 'Rövanş'}
         </button>
         {/* ikincil aksiyon: rovansin altinda */}
-        <ShareButton
-          text={shareMsg}
-          title={shareTitle}
-          makeFile={makeLikelyShareFile ?? makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
-        />
+        {!(isKoopIkiDogruBirYalan(snapshot) && (truthLie?.availableRounds ?? 0) === 0) && (
+          <ShareButton
+            text={shareMsg}
+            title={shareTitle}
+            makeFile={makeTruthLieShareFile ?? makeLikelyShareFile ?? makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
+          />
+        )}
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
         </button>
@@ -705,6 +778,85 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op Iki Dogru Bir Yalan: yalnız toplu skor; ham iddialar finalde yok ----
+  if (isKoopIkiDogruBirYalan(snapshot)) {
+    const game = snapshot.ikiDogruBirYalan;
+    const caughtCount = game?.caughtCount ?? 0;
+    const wrongCount = game?.wrongCount ?? 0;
+    const skippedCount = game?.skippedCount ?? 0;
+    const attemptedCount = game?.attemptedCount ?? 0;
+    const availableRounds = game?.availableRounds ?? 0;
+    const catchRate = ikiDogruBirYalanPct(snapshot);
+    const incomplete = availableRounds < 2 || attemptedCount < 2;
+    const result = ikiDogruBirYalanResult(caughtCount, attemptedCount, availableRounds);
+    return (
+      <div ref={root} className="truth-lie-shell truth-lie-victory flex w-full flex-col items-center gap-4 pt-5 pb-6 text-center">
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="truth-lie-final-icon" aria-hidden="true"><IconTruthLie size={40} /></span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <div data-pop>
+          <p className="truth-lie-final-kicker">KARTLAR KAPANDI</p>
+          <div className="truth-lie-final-names">
+            {MODE_META.iki_dogru_bir_yalan.name}
+            {opp ? ` · ${me?.nick ?? ''} + ${opp.nick}` : ''}
+          </div>
+        </div>
+
+        <div
+          data-pop
+          className="truth-lie-final-score"
+          role="status"
+          aria-label={incomplete
+            ? `${availableRounds} paketin ${attemptedCount} tanesinde tahmin tamamlandı; tur yarım kaldı`
+            : `${availableRounds} yalandan ${caughtCount} tanesi yakalandı; yüzde ${catchRate} yakalama oranı`}
+        >
+          <h1><strong>{caughtCount}/{availableRounds}</strong><span>YALAN YAKALANDI</span></h1>
+          <small>{incomplete ? `${attemptedCount}/${availableRounds} tahmin tamamlandı` : `%${catchRate} yakalama oranı`}</small>
+        </div>
+
+        <div data-pop className="truth-lie-final-copy">
+          <h2>{result.title}</h2>
+          <p>{result.subtitle}</p>
+        </div>
+
+        <div data-pop className="truth-lie-final-stats" aria-label="Ortak yalan avı özeti">
+          <div className="truth-lie-final-stat caught">
+            <strong>{caughtCount}</strong>
+            <span>YAKALANDI</span>
+          </div>
+          <div className="truth-lie-final-stat wrong">
+            <strong>{wrongCount}</strong>
+            <span>KAÇTI</span>
+          </div>
+          <div className="truth-lie-final-stat skipped">
+            <strong>{skippedCount}</strong>
+            <span>PAS GEÇİLDİ</span>
+          </div>
+        </div>
+
+        <div data-pop className="truth-lie-final-summary">
+          <span>{attemptedCount}/{availableRounds} tahmin tamamlandı</span>
+          <span>{caughtCount} doğru · {wrongCount} yanlış</span>
+        </div>
+
+        <p data-pop className="truth-lie-story-privacy">
+          Story'de yalnız ortak skor paylaşılır; ham iddialarınız gösterilmez.
         </p>
         {footer}
       </div>

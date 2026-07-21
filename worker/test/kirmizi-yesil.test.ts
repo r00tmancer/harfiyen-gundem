@@ -88,6 +88,7 @@ function stateForGame(phase: RoomState['phase'] = 'kirmizi_yesil_vote'): RoomSta
       compatibility: null,
     },
     kimDahaMuhtemel: null,
+    ikiDogruBirYalan: null,
   };
 }
 

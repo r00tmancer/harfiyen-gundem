@@ -28,7 +28,8 @@ export type GameMode =
   | 'randevu_ruleti'
   | 'emoji_sifre'
   | 'kirmizi_yesil'
-  | 'kim_daha_muhtemel';
+  | 'kim_daha_muhtemel'
+  | 'iki_dogru_bir_yalan';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -76,6 +77,13 @@ export const KIRMIZI_YESIL_REVEAL_MS = 2_200;
 export const KIM_DAHA_MUHTEMEL_ROUNDS = 8;
 export const KIM_DAHA_MUHTEMEL_VOTE_MS = 9_000;
 export const KIM_DAHA_MUHTEMEL_REVEAL_MS = 2_300;
+
+// Iki Dogru Bir Yalan — iki oyuncu uc iddia hazirlar, partner gizli yalani bulur
+export const IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT = 3;
+export const IKI_DOGRU_BIR_YALAN_MAX_STATEMENT_LENGTH = 72;
+export const IKI_DOGRU_BIR_YALAN_SETUP_MS = 60_000;
+export const IKI_DOGRU_BIR_YALAN_GUESS_MS = 18_000;
+export const IKI_DOGRU_BIR_YALAN_REVEAL_MS = 4_200;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -128,6 +136,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   emoji_sifre: null, // bu kisa co-op modunda joker yok
   kirmizi_yesil: null, // bu hizli uyum testinde joker yok
   kim_daha_muhtemel: null, // bu hizli cift oyununda joker yok
+  iki_dogru_bir_yalan: null, // bu kisa tanişma oyununda joker yok
 };
 
 export const TR_LETTERS = [
@@ -187,6 +196,9 @@ export type Phase =
   | 'kirmizi_yesil_reveal' // (kirmizi mi yesil mi) iki oy aciliyor
   | 'kim_daha_muhtemel_vote' // iki oyuncu self/partner/both secimini gizlice kilitliyor
   | 'kim_daha_muhtemel_reveal' // oylar mutlak hedeflere cevrilip aciliyor
+  | 'iki_dogru_bir_yalan_setup' // iki oyuncu kendi uc iddiasini ayni anda hazirliyor
+  | 'iki_dogru_bir_yalan_guess' // aktif tahminci partnerinin yalanini seciyor
+  | 'iki_dogru_bir_yalan_reveal' // aktif paketin yalani ve tahmini aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -461,6 +473,104 @@ export interface KimDahaMuhtemelState {
   agreementPct: number | null; // yalniz match_end fazinda
 }
 
+export type IkiDogruBirYalanStatements = [string, string, string];
+export type IkiDogruBirYalanRole = 'setup' | 'subject' | 'guesser' | 'done';
+
+export interface IkiDogruBirYalanReveal {
+  round: number;
+  subjectId: string;
+  guesserId: string;
+  statements: IkiDogruBirYalanStatements;
+  lieIndex: number; // 0..2
+  guessIndex: number | null; // timeout = null
+  caught: boolean;
+}
+
+export interface IkiDogruBirYalanState {
+  round: number; // setup/neutral finalde 0; aktif veya tamamlanmis macta 1..availableRounds
+  availableRounds: number; // setup kapaninca 0..2
+  role: IkiDogruBirYalanRole;
+  mySubmitted: boolean;
+  opponentSubmitted: boolean;
+  subjectId: string | null;
+  guesserId: string | null;
+  statements: IkiDogruBirYalanStatements | null; // yalniz current guess/reveal paketi
+  myGuess: number | null; // yalniz recipient aktif tahminciyse
+  guessLocked: boolean;
+  caughtCount: number;
+  wrongCount: number;
+  skippedCount: number;
+  attemptedCount: number;
+  catches: Record<string, number>; // guesser pid -> yakalanan yalan sayisi
+  catchRate: number | null; // attemptedCount 0 ise null
+  history: IkiDogruBirYalanReveal[];
+  reveal: IkiDogruBirYalanReveal | null;
+}
+
+function hasIkiDogruBirYalanForbiddenControl(value: string): boolean {
+  for (const character of value) {
+    const code = character.codePointAt(0) ?? 0;
+    if (
+      code <= 0x1f ||
+      code === 0x7f ||
+      (code >= 0x80 && code <= 0x9f) ||
+      code === 0x00ad ||
+      code === 0x034f ||
+      code === 0x061c ||
+      code === 0x180e ||
+      code === 0x200e ||
+      code === 0x200f ||
+      code === 0x200b ||
+      (code >= 0x202a && code <= 0x202e) ||
+      (code >= 0x2060 && code <= 0x206f) ||
+      code === 0xfeff ||
+      (code >= 0xfff9 && code <= 0xfffb)
+    ) return true;
+  }
+  return false;
+}
+
+function ikiDogruBirYalanDuplicateKey(value: string): string {
+  let comparable = '';
+  for (const character of value) {
+    const code = character.codePointAt(0) ?? 0;
+    // ZWJ/ZWNJ ve variation selector'lar emoji sunumunda kalabilir; fakat
+    // gorunurde ayni iki iddiayi benzersiz gostermek icin duplicate anahtarinda
+    // fark yaratmalarina izin verilmez.
+    if (
+      code === 0x200c ||
+      code === 0x200d ||
+      (code >= 0xfe00 && code <= 0xfe0f) ||
+      (code >= 0xe0100 && code <= 0xe01ef)
+    ) continue;
+    comparable += character;
+  }
+  return comparable.toLocaleLowerCase('tr-TR');
+}
+
+// Sunucu ve istemci parser'i ayni kanonik metni kullanir: NFKC, kenar trim ve
+// Unicode bosluklarini tek ASCII bosluga indirme. Kontroller normalize edilmeden
+// once reddedilir; boylece newline/tab trim sirasinda sessizce kaybolmaz.
+export function normalizeIkiDogruBirYalanStatements(
+  value: unknown,
+): IkiDogruBirYalanStatements | null {
+  if (!Array.isArray(value) || value.length !== IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT) return null;
+  const normalized: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string' || hasIkiDogruBirYalanForbiddenControl(entry)) return null;
+    const clean = entry.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+    if (
+      !clean ||
+      [...clean].length > IKI_DOGRU_BIR_YALAN_MAX_STATEMENT_LENGTH ||
+      hasIkiDogruBirYalanForbiddenControl(clean)
+    ) return null;
+    normalized.push(clean);
+  }
+  const unique = new Set(normalized.map(ikiDogruBirYalanDuplicateKey));
+  if (unique.size !== IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT) return null;
+  return [normalized[0], normalized[1], normalized[2]];
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -484,7 +594,7 @@ export interface RoomSnapshot {
   usedWords: string[]; // bu maçta kabul edilmiş kelimeler (tekrar kullanılamaz)
   winner: string | null; // match_end'de kazanan oyuncu id'i
   frozenUntil: Record<string, number>; // (harf) oyuncu id -> buz jokerinin bittiği an
-  turn: string | null; // (sayi/zincir/bom) sıra hangi oyuncuda
+  turn: string | null; // sira tabanli modlarda aktif oyuncu pid'i
   sayi: SayiState | null;
   zincir: ZincirState | null;
   uzun: UzunState | null;
@@ -496,6 +606,7 @@ export interface RoomSnapshot {
   emojiSifre: EmojiSifreState | null;
   kirmiziYesil: KirmiziYesilState | null;
   kimDahaMuhtemel: KimDahaMuhtemelState | null;
+  ikiDogruBirYalan: IkiDogruBirYalanState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -517,6 +628,8 @@ export type ClientMsg =
   | { t: 'emoji_sifre_guess'; choice: number; round: number } // choice 0..3; stale tur reddedilir
   | { t: 'kirmizi_yesil_vote'; choice: KirmiziYesilChoice; round: number } // stale tur ve tekrar oy reddedilir
   | { t: 'kim_daha_muhtemel_vote'; choice: KimDahaMuhtemelChoice; round: number } // stale tur ve tekrar oy reddedilir
+  | { t: 'iki_dogru_bir_yalan_pack'; statements: IkiDogruBirYalanStatements; lieIndex: number }
+  | { t: 'iki_dogru_bir_yalan_guess'; choice: number; round: number }
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

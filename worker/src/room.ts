@@ -52,6 +52,7 @@ import * as randevuRuleti from './game/modes/randevu-ruleti';
 import * as emojiSifre from './game/modes/emoji-sifre';
 import * as kirmiziYesil from './game/modes/kirmizi-yesil';
 import * as kimDahaMuhtemel from './game/modes/kim-daha-muhtemel';
+import * as ikiDogruBirYalan from './game/modes/iki-dogru-bir-yalan';
 import wordsRaw from './data/words.txt';
 import pairsJson from './data/pairs.json';
 import badwordsJson from './data/badwords.json';
@@ -73,6 +74,7 @@ const MODES: GameMode[] = [
   'emoji_sifre',
   'kirmizi_yesil',
   'kim_daha_muhtemel',
+  'iki_dogru_bir_yalan',
 ];
 function isGameMode(x: unknown): x is GameMode {
   return typeof x === 'string' && (MODES as string[]).includes(x);
@@ -167,6 +169,7 @@ export class GameRoom extends DurableObject<Env> {
       emojiSifre: null,
       kirmiziYesil: null,
       kimDahaMuhtemel: null,
+      ikiDogruBirYalan: null,
     };
     await this.ctx.storage.setAlarm(Date.now() + CLEANUP_MS);
     await this.save(state);
@@ -349,6 +352,12 @@ export class GameRoom extends DurableObject<Env> {
       case 'kim_daha_muhtemel_vote':
         await kimDahaMuhtemel.onVote(this.mc(), state, player, msg.choice, msg.round);
         break;
+      case 'iki_dogru_bir_yalan_pack':
+        await ikiDogruBirYalan.onPack(this.mc(), state, player, msg.statements, msg.lieIndex);
+        break;
+      case 'iki_dogru_bir_yalan_guess':
+        await ikiDogruBirYalan.onGuess(this.mc(), state, player, msg.choice, msg.round);
+        break;
       case 'submit_word':
         if (state.mode === 'zincir') await zincir.onSubmit(this.mc(), state, player, ws, msg.word);
         else if (state.mode === 'uzun') await uzun.onSubmit(this.mc(), state, player, ws, msg.word);
@@ -411,6 +420,8 @@ export class GameRoom extends DurableObject<Env> {
         break; // bu hizli uyum testinde joker yok
       case 'kim_daha_muhtemel':
         break; // bu hizli cift oyununda joker yok
+      case 'iki_dogru_bir_yalan':
+        break; // bu kisa tanişma oyununda joker yok
     }
   }
 
@@ -461,6 +472,9 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'kim_daha_muhtemel':
         await kimDahaMuhtemel.startMatch(this.mc(), state);
+        break;
+      case 'iki_dogru_bir_yalan':
+        await ikiDogruBirYalan.startMatch(this.mc(), state);
         break;
     }
   }
@@ -590,6 +604,7 @@ export class GameRoom extends DurableObject<Env> {
       state.emojiSifre = null; // rovansta taze hedefler ve secenek siralari uretilir
       state.kirmiziYesil = null; // rovansta sekiz kategoriden taze senaryolar secilir
       state.kimDahaMuhtemel = null; // rovansta sekiz kategoriden taze promptlar secilir
+      state.ikiDogruBirYalan = null; // rovansta iki yeni oyuncu paketi hazirlanir
       this.broadcast({ t: 'rematch_state', want: [] });
       // mod rovansta korunur; her mod kendi durumunu bastan kurar
       await this.startMode(state);
@@ -616,6 +631,7 @@ export class GameRoom extends DurableObject<Env> {
     state.emojiSifre = null;
     state.kirmiziYesil = null;
     state.kimDahaMuhtemel = null;
+    state.ikiDogruBirYalan = null;
     for (const p of state.players) p.pickedLetter = null;
     state.deadline = Date.now() + PICK_MS;
     state.alarmPurpose = 'phase';
@@ -699,6 +715,7 @@ export class GameRoom extends DurableObject<Env> {
         else if (state.mode === 'emoji_sifre') await emojiSifre.startEncode(this.mc(), state);
         else if (state.mode === 'kirmizi_yesil') await kirmiziYesil.startVote(this.mc(), state);
         else if (state.mode === 'kim_daha_muhtemel') await kimDahaMuhtemel.startVote(this.mc(), state);
+        else if (state.mode === 'iki_dogru_bir_yalan') await ikiDogruBirYalan.startSetup(this.mc(), state);
         else await this.startRacing(state); // harf
         break;
       case 'racing': {
@@ -775,6 +792,15 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'kim_daha_muhtemel_reveal':
         await kimDahaMuhtemel.onRevealDone(this.mc(), state);
+        break;
+      case 'iki_dogru_bir_yalan_setup':
+        await ikiDogruBirYalan.onSetupDeadline(this.mc(), state);
+        break;
+      case 'iki_dogru_bir_yalan_guess':
+        await ikiDogruBirYalan.onGuessDeadline(this.mc(), state);
+        break;
+      case 'iki_dogru_bir_yalan_reveal':
+        await ikiDogruBirYalan.onRevealDone(this.mc(), state);
         break;
       case 'round_end':
         if (state.mode === 'sayi') {
@@ -870,6 +896,7 @@ export class GameRoom extends DurableObject<Env> {
       state.emojiSifre ??= null;
       state.kirmiziYesil ??= null;
       state.kimDahaMuhtemel ??= null;
+      state.ikiDogruBirYalan ??= null;
     }
     return state;
   }
@@ -1007,6 +1034,7 @@ export class GameRoom extends DurableObject<Env> {
     const emojiSifreSnap = emojiSifre.toEmojiSifreSnapshot(state, you);
     const kirmiziYesilSnap = kirmiziYesil.toKirmiziYesilSnapshot(state, you);
     const kimDahaMuhtemelSnap = kimDahaMuhtemel.toKimDahaMuhtemelSnapshot(state, you);
+    const ikiDogruBirYalanSnap = ikiDogruBirYalan.toIkiDogruBirYalanSnapshot(state, you);
 
     // Bom: gizli alan yok; sunucu durumu oldugu gibi gorunur.
     const bomSnap = state.bom
@@ -1051,6 +1079,7 @@ export class GameRoom extends DurableObject<Env> {
       emojiSifre: emojiSifreSnap,
       kirmiziYesil: kirmiziYesilSnap,
       kimDahaMuhtemel: kimDahaMuhtemelSnap,
+      ikiDogruBirYalan: ikiDogruBirYalanSnap,
     };
   }
 }

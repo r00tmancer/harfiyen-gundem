@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconLikely, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
+import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconLikely, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo, IconTruthLie } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['kim_daha_muhtemel', 'kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['iki_dogru_bir_yalan', 'kim_daha_muhtemel', 'kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -15,11 +15,17 @@ export interface ModeMeta {
 }
 
 export const MODE_META: Record<GameMode, ModeMeta> = {
+  iki_dogru_bir_yalan: {
+    name: 'İki Doğru Bir Yalan',
+    desc: 'Üç kısa iddia yazın; partneriniz gizli yalanı yakalasın.',
+    joker: '2 paket · 3 iddia · 1 yalan',
+    badge: 'YENİ · 2 DK',
+    Icon: IconTruthLie,
+  },
   kim_daha_muhtemel: {
     name: 'Kim Daha Muhtemel?',
     desc: 'Sekiz eğlenceli rolde gizlice birbirinizi işaretleyin.',
     joker: '8 tur · Ben, partnerim veya ikimiz',
-    badge: 'YENİ · 1 DK',
     Icon: IconLikely,
   },
   harf: {
@@ -80,7 +86,6 @@ export const MODE_META: Record<GameMode, ModeMeta> = {
     name: 'Kırmızı mı Yeşil mi?',
     desc: 'Aynı senaryoya gizlice renk verin; cevaplar birlikte açılsın.',
     joker: '8 tur · 3 gizli renk',
-    badge: 'YENİ · 1 DK',
     Icon: IconFlagRadar,
   },
   kor_siralama: {

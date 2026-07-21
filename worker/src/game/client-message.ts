@@ -5,6 +5,7 @@ import {
   EMOJI_SIFRE_OPTION_COUNT,
   EMOJI_SIFRE_PALETTE,
   EMOJI_SIFRE_ROUNDS,
+  IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT,
   KOR_SIRALAMA_ITEMS,
   KIM_DAHA_MUHTEMEL_ROUNDS,
   KIRMIZI_YESIL_ROUNDS,
@@ -14,6 +15,7 @@ import {
   SAYI_MAX,
   SAYI_MIN,
   TR_LETTERS,
+  normalizeIkiDogruBirYalanStatements,
   normalizeTr,
 } from '@harfiyen/shared';
 import type {
@@ -51,6 +53,7 @@ const GAME_MODES = {
   emoji_sifre: true,
   kirmizi_yesil: true,
   kim_daha_muhtemel: true,
+  iki_dogru_bir_yalan: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -202,6 +205,21 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         isKimDahaMuhtemelChoice(value.choice) &&
         isIntegerInRange(value.round, 1, KIM_DAHA_MUHTEMEL_ROUNDS)
         ? { t: 'kim_daha_muhtemel_vote', choice: value.choice, round: value.round }
+        : null;
+
+    case 'iki_dogru_bir_yalan_pack': {
+      if (!hasExactKeys(value, ['t', 'statements', 'lieIndex'])) return null;
+      const statements = normalizeIkiDogruBirYalanStatements(value.statements);
+      return statements && isIntegerInRange(value.lieIndex, 0, IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT - 1)
+        ? { t: 'iki_dogru_bir_yalan_pack', statements, lieIndex: value.lieIndex }
+        : null;
+    }
+
+    case 'iki_dogru_bir_yalan_guess':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isIntegerInRange(value.choice, 0, IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT - 1) &&
+        isIntegerInRange(value.round, 1, 2)
+        ? { t: 'iki_dogru_bir_yalan_guess', choice: value.choice, round: value.round }
         : null;
 
     case 'use_joker':

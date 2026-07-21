@@ -8,6 +8,8 @@ import type {
   EmojiSifreOptions,
   EmojiSifreReveal,
   GameMode,
+  IkiDogruBirYalanReveal,
+  IkiDogruBirYalanStatements,
   KimDahaMuhtemelChoice,
   KimDahaMuhtemelPrompt,
   KimDahaMuhtemelReveal,
@@ -166,6 +168,30 @@ export interface KimDahaMuhtemelServer {
   agreementPct: number | null;
 }
 
+export interface IkiDogruBirYalanServerPack {
+  statements: IkiDogruBirYalanStatements;
+  lieIndex: number;
+}
+
+// Iki Dogru Bir Yalan: iki pack setup boyunca yalniz sunucuda kalir. Order,
+// setup kapaninca mevcut pack sahiplerinden uretilir; snapshot sadece o anki
+// tahmin paketini, reveal/history ise tamamlanmis paketleri acabilir.
+export interface IkiDogruBirYalanServer {
+  packs: Record<string, IkiDogruBirYalanServerPack>;
+  order: string[]; // subject pid sirasi; future pack snapshot'a girmez
+  roundIndex: number; // setup/neutral finalde 0, aktif turda order indeksi
+  guess: number | null;
+  caughtCount: number;
+  wrongCount: number;
+  skippedCount: number;
+  attemptedCount: number;
+  availableRounds: number;
+  catches: Record<string, number>;
+  catchRate: number | null;
+  history: IkiDogruBirYalanReveal[];
+  reveal: IkiDogruBirYalanReveal | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -201,6 +227,7 @@ export interface RoomState {
   emojiSifre: EmojiSifreServer | null;
   kirmiziYesil: KirmiziYesilServer | null;
   kimDahaMuhtemel: KimDahaMuhtemelServer | null;
+  ikiDogruBirYalan: IkiDogruBirYalanServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

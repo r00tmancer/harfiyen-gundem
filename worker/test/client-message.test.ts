@@ -17,6 +17,7 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'set_mode', mode: 'emoji_sifre' },
     { t: 'set_mode', mode: 'kirmizi_yesil' },
     { t: 'set_mode', mode: 'kim_daha_muhtemel' },
+    { t: 'set_mode', mode: 'iki_dogru_bir_yalan' },
     { t: 'pick_letter', letter: 'İ' },
     { t: 'submit_word', word: 'incir' },
     { t: 'pick_number', value: 1 },
@@ -40,6 +41,13 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'kim_daha_muhtemel_vote', choice: 'self', round: 1 },
     { t: 'kim_daha_muhtemel_vote', choice: 'partner', round: 4 },
     { t: 'kim_daha_muhtemel_vote', choice: 'both', round: 8 },
+    {
+      t: 'iki_dogru_bir_yalan_pack',
+      statements: ['Bir kez paraşütle atladım', 'Hiç kahve içmedim', 'Üç dil konuşuyorum'],
+      lieIndex: 1,
+    },
+    { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 1 },
+    { t: 'iki_dogru_bir_yalan_guess', choice: 2, round: 2 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -260,6 +268,79 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
       { t: 'kim_daha_muhtemel_vote', choice: 'self' },
       { t: 'kim_daha_muhtemel_vote', choice: 'self', round: 1, pid: 'p2' },
       { t: 'kim_daha_muhtemel_vote', choice: 'partner', round: 1, role: 'admin' },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('iki dogru bir yalan pack metnini NFKC, trim ve Unicode bosluk collapse ile kanoniklestirir', () => {
+    expect(parse({
+      t: 'iki_dogru_bir_yalan_pack',
+      statements: ['  İlk\u00a0iddia  ', 'İkinci\u2003iddia', 'Tam genişlik：Ａ'],
+      lieIndex: 2,
+    })).toEqual({
+      ok: true,
+      value: {
+        t: 'iki_dogru_bir_yalan_pack',
+        statements: ['İlk iddia', 'İkinci iddia', 'Tam genişlik:A'],
+        lieIndex: 2,
+      },
+    });
+    expect(parse({
+      t: 'iki_dogru_bir_yalan_pack',
+      statements: ['Ailem 👨‍👩‍👧', 'Bir kedim var', 'Dağ yürüyüşünü severim'],
+      lieIndex: 0,
+    })).toMatchObject({ ok: true });
+  });
+
+  it('iki dogru bir yalan packini exact-key, 3 benzersiz kisa metin ve tek lieIndex ile sinirlar', () => {
+    const valid = ['Bir', 'İki', 'Üç'];
+    const invalid = [
+      { t: 'iki_dogru_bir_yalan_pack', statements: valid },
+      { t: 'iki_dogru_bir_yalan_pack', statements: valid, lieIndex: 0, admin: true },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir', 'İki'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir', 'İki', 'Üç', 'Dört'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir', 2, 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['\u00a0', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['x'.repeat(73), 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['İDDİA', 'iddia', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['①', '1', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\nSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\tSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u007fSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u0085Satır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u00adSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u200bSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u2060Satır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u206fSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\ufeffSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u202eSatır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir\u2066Satır', 'İki', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: ['Bir', 'B\u200dir', 'Üç'], lieIndex: 0 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: valid, lieIndex: -1 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: valid, lieIndex: 3 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: valid, lieIndex: 1.5 },
+      { t: 'iki_dogru_bir_yalan_pack', statements: valid, lieIndex: '1' },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('iki dogru bir yalan tahminini exact-key choice 0..2 ve round 1..2 ile sinirlar', () => {
+    const invalid = [
+      { t: 'iki_dogru_bir_yalan_guess', choice: -1, round: 1 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 3, round: 1 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 1.5, round: 1 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: '1', round: 1 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 0 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 3 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 1.5 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: '1' },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 0 },
+      { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 1, pid: 'p2' },
     ];
     for (const value of invalid) {
       expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
