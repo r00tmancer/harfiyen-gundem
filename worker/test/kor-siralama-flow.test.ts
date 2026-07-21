@@ -69,6 +69,7 @@ function stateForRank(): RoomState {
     beniYakala: null,
     randevuRuleti: null,
     emojiSifre: null,
+    kirmiziYesil: null,
   };
 }
 

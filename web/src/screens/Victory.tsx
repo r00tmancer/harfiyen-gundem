@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import { BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KIRMIZI_YESIL_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
 import type { PlayerPublic, RandevuCategory, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconEmojiCode, IconHeartSolid, IconRanking, IconRoulette, IconShare } from '../ui/icons';
+import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconRanking, IconRoulette, IconShare } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
@@ -15,6 +15,7 @@ import { createKorShareCard } from '../share/korSiralamaCard';
 import { createBeniYakalaShareCard } from '../share/beniYakalaCard';
 import { createRandevuRuletiShareCard } from '../share/randevuRuletiCard';
 import { createEmojiSifreShareCard } from '../share/emojiSifreCard';
+import { createKirmiziYesilShareCard } from '../share/kirmiziYesilCard';
 import { PUBLIC_URL } from '../config';
 
 const GAME_URL = PUBLIC_URL;
@@ -108,6 +109,10 @@ function isKoopEmojiSifre(snap: RoomSnapshot): boolean {
   return snap.mode === 'emoji_sifre' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopKirmiziYesil(snap: RoomSnapshot): boolean {
+  return snap.mode === 'kirmizi_yesil' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -129,6 +134,31 @@ function randevuRuletiPct(snap: RoomSnapshot): number {
 
 function emojiSifrePct(snap: RoomSnapshot): number {
   return Math.round(((snap.emojiSifre?.correctCount ?? 0) / EMOJI_SIFRE_ROUNDS) * 100);
+}
+
+function kirmiziYesilPct(snap: RoomSnapshot): number {
+  const game = snap.kirmiziYesil;
+  if (!game) return 0;
+  // match_end eventi final snapshot'tan hemen once gelebilir. O kisa aralikta
+  // sunucunun kullandigi jointRounds paydasini yerelde de aynen koru.
+  return game.compatibility
+    ?? (game.jointRounds === 0 ? 0 : Math.round((game.matches / game.jointRounds) * 100));
+}
+
+function kirmiziYesilResult(jointRounds: number, pct: number): { title: string; subtitle: string } {
+  if (jointRounds < 4) {
+    return { title: 'Radar yarım kaldı', subtitle: 'Sağlam bir sonuç için birkaç ortak seçim daha gerekiyordu.' };
+  }
+  if (pct >= 88) {
+    return { title: 'Bayrak telepatisi', subtitle: 'Neredeyse her durumda aynı renge baktınız.' };
+  }
+  if (pct >= 63) {
+    return { title: 'Aynı frekanstasınız', subtitle: 'Renkleriniz çoğunlukla aynı yöne dönüyor.' };
+  }
+  if (pct >= 38) {
+    return { title: 'Tatlı gri alan', subtitle: 'Konuşacak güzel başlıklar çıktı.' };
+  }
+  return { title: 'Farklı renk, aynı takım', subtitle: 'Aynı durumlara kendi renginizden bakıyorsunuz.' };
 }
 
 function randevuCategoryLabel(category: RandevuCategory): string {
@@ -294,7 +324,8 @@ export default function Victory() {
       isKoopKorSiralama(snapshot) ||
       isKoopBeniYakala(snapshot) ||
       isKoopRandevuRuleti(snapshot) ||
-      isKoopEmojiSifre(snapshot)
+      isKoopEmojiSifre(snapshot) ||
+      isKoopKirmiziYesil(snapshot)
     ) {
       celebratedSeq = matchEndSeq;
       haptics.victory();
@@ -306,8 +337,12 @@ export default function Victory() {
             ? beniYakalaPct(snapshot)
             : isKoopRandevuRuleti(snapshot)
               ? randevuRuletiPct(snapshot)
-              : emojiSifrePct(snapshot);
-      if (pct >= 70) heartRain();
+              : isKoopEmojiSifre(snapshot)
+                ? emojiSifrePct(snapshot)
+                : kirmiziYesilPct(snapshot);
+      const enoughFlagRounds = !isKoopKirmiziYesil(snapshot)
+        || (snapshot.kirmiziYesil?.jointRounds ?? 0) >= 4;
+      if (pct >= 70 && enoughFlagRounds) heartRain();
       return;
     }
     if (!winner) return;
@@ -336,6 +371,8 @@ export default function Victory() {
         ? `Randevu Ruleti planımız hazır: ${snapshot.randevuRuleti?.plan.map((item) => item.label).join(' → ') ?? 'sürpriz randevu'} · ${snapshot.randevuRuleti?.matches ?? 0}/${RANDEVU_RULETI_ROUNDS} aynı seçim! Siz de deneyin: ${GAME_URL}`
       : isKoopEmojiSifre(snapshot)
         ? `Emoji Şifre'de ${snapshot.emojiSifre?.correctCount ?? 0}/${EMOJI_SIFRE_ROUNDS} ortak şifre çözdük! Siz de üç emojiyle anlatın: ${GAME_URL}`
+      : isKoopKirmiziYesil(snapshot)
+        ? `Kırmızı mı Yeşil mi? oyununda ${snapshot.kirmiziYesil?.matches ?? 0}/${KIRMIZI_YESIL_ROUNDS} aynı rengi seçtik! Siz de ilişki radarınızı açın: ${GAME_URL}`
       : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
@@ -402,7 +439,34 @@ export default function Victory() {
             url: GAME_URL,
           })
       : undefined;
-  const shareTitle = isKoopEmojiSifre(snapshot)
+  const flags = snapshot.kirmiziYesil;
+  const featuredFlagPrompt = flags
+    ? [...flags.history].reverse().find((round) => round.match)?.prompt
+      ?? flags.history.at(-1)?.prompt
+      ?? 'Bu davranış sende hangi rengi yakıyor?'
+    : 'Bu davranış sende hangi rengi yakıyor?';
+  const makeFlagsShareFile =
+    isKoopKirmiziYesil(snapshot) && me && opp && flags
+      ? () =>
+          createKirmiziYesilShareCard({
+            playerA: me.nick,
+            playerB: opp.nick,
+            matches: flags.matches,
+            redMatches: flags.redMatches,
+            dependsMatches: flags.dependsMatches,
+            greenMatches: flags.greenMatches,
+            jointRounds: flags.jointRounds,
+            splitRounds: flags.splitRounds,
+            missedRounds: flags.missedRounds,
+            compatibility: flags.compatibility ?? kirmiziYesilPct(snapshot),
+            // Yalniz tamamlanip acilmis history'den tek guvenli prompt aktarilir.
+            featuredPrompt: featuredFlagPrompt,
+            url: GAME_URL,
+          })
+      : undefined;
+  const shareTitle = isKoopKirmiziYesil(snapshot)
+    ? 'Kırmızı mı Yeşil mi? Sonucu'
+    : isKoopEmojiSifre(snapshot)
     ? 'Emoji Şifre Sonucu'
     : isKoopRandevuRuleti(snapshot)
     ? 'Randevu Ruleti Sonucu'
@@ -441,7 +505,7 @@ export default function Victory() {
         <ShareButton
           text={shareMsg}
           title={shareTitle}
-          makeFile={makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
+          makeFile={makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
         />
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
@@ -557,6 +621,77 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op Kirmizi mi Yesil mi?: toplu radar, bireysel oy yok ----
+  if (isKoopKirmiziYesil(snapshot)) {
+    const game = snapshot.kirmiziYesil;
+    const matches = game?.matches ?? 0;
+    const pct = kirmiziYesilPct(snapshot);
+    const jointRounds = game?.jointRounds ?? 0;
+    const radarIncomplete = jointRounds < 4;
+    const result = kirmiziYesilResult(jointRounds, pct);
+    return (
+      <div ref={root} className="flag-shell flag-victory flex w-full flex-col items-center gap-4 pt-5 pb-6 text-center">
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="flag-final-icon" aria-hidden="true"><IconFlagRadar size={39} /></span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <div data-pop>
+          <p className="flag-final-kicker">İLİŞKİ RADARI TAMAMLANDI</p>
+          <div className="flag-final-names">
+            {MODE_META.kirmizi_yesil.name}
+            {opp ? ` · ${me?.nick ?? ''} + ${opp.nick}` : ''}
+          </div>
+        </div>
+
+        <div data-pop className="flag-final-score" role="status" aria-label={radarIncomplete ? `${KIRMIZI_YESIL_ROUNDS} üzerinden ${matches} aynı renk, yeterli ortak oy yok` : `${KIRMIZI_YESIL_ROUNDS} üzerinden ${matches} aynı renk, yüzde ${pct} uyum`}>
+          <h1><strong>{matches}/{KIRMIZI_YESIL_ROUNDS}</strong><span>AYNI RENK</span></h1>
+          <small>{radarIncomplete ? 'Yeterli ortak oy yok' : `%${pct} uyum`}</small>
+        </div>
+
+        <div data-pop className="flag-result-copy">
+          <h2>{result.title}</h2>
+          <p>{result.subtitle}</p>
+        </div>
+
+        <div data-pop className="flag-final-stats" aria-label="Ortak renklerin dağılımı">
+          <div className="flag-final-stat red">
+            <strong>{game?.redMatches ?? 0}</strong>
+            <span>ORTAK KIRMIZI</span>
+          </div>
+          <div className="flag-final-stat depends">
+            <strong>{game?.dependsMatches ?? 0}</strong>
+            <span>DURUMA BAĞLI</span>
+          </div>
+          <div className="flag-final-stat green">
+            <strong>{game?.greenMatches ?? 0}</strong>
+            <span>ORTAK YEŞİL</span>
+          </div>
+        </div>
+
+        <div data-pop className="flag-final-summary">
+          <span>{jointRounds}/{KIRMIZI_YESIL_ROUNDS} birlikte cevaplandı</span>
+          <span>{game?.splitRounds ?? 0} farklı bakış</span>
+          <span>{game?.missedRounds ?? 0} kaçan tur</span>
+        </div>
+
+        <p data-pop className="flag-trust-note">Doğru cevap yok; bu yalnızca sizin bakış açınız.</p>
+        <p data-pop className="flag-story-privacy">
+          Story'de yalnız isimler, toplamlar ve açılmış tek bir senaryo yer alır; bireysel renkleriniz gösterilmez.
         </p>
         {footer}
       </div>

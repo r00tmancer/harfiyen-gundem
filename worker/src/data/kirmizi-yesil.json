@@ -1,0 +1,57 @@
+[
+  { "category": "mesajlasma", "prompt": "Günaydın mesajını her gün ilk uyanan gönderiyor." },
+  { "category": "mesajlasma", "prompt": "Yazmak yerine çoğunlukla sesli mesaj bırakıyor." },
+  { "category": "mesajlasma", "prompt": "Heyecanlanınca art arda beş altı kısa mesaj gönderiyor." },
+  { "category": "mesajlasma", "prompt": "Önemli konuları mesajda değil, telefonda konuşmayı tercih ediyor." },
+  { "category": "mesajlasma", "prompt": "Okundu bilgisini bütün sohbetlerinde kapalı tutuyor." },
+  { "category": "mesajlasma", "prompt": "Uzun bir sessizlikten sonra sohbete komik bir videoyla dönüyor." },
+
+  { "category": "plan_zaman", "prompt": "Hafta sonunu çarşambadan planlamak istiyor." },
+  { "category": "plan_zaman", "prompt": "Aynı gün içinde aniden buluşma teklif ediyor." },
+  { "category": "plan_zaman", "prompt": "Randevu mekânını sırayla birinizin seçmesini öneriyor." },
+  { "category": "plan_zaman", "prompt": "İkinize özel zamanı ortak takvime yazıyor." },
+  { "category": "plan_zaman", "prompt": "Sevdiğiniz aynı mekâna sık sık gitmek istiyor." },
+  { "category": "plan_zaman", "prompt": "Ayda bir hafta sonunu kendi başına geçirmek istiyor." },
+
+  { "category": "ev_halleri", "prompt": "Ev işlerini aynı anda müzik açıp birlikte yapmak istiyor." },
+  { "category": "ev_halleri", "prompt": "Dağınıklık eşiğiniz farklı olduğu için temizlik gününü önceden belirliyor." },
+  { "category": "ev_halleri", "prompt": "Evde yalnız kalabileceği kendine ait bir köşe istiyor." },
+  { "category": "ev_halleri", "prompt": "Akşam ne yiyeceğinize dönüşümlü karar vermeyi öneriyor." },
+  { "category": "ev_halleri", "prompt": "Dizinin yeni bölümünü yalnızca birlikte izlemek istiyor." },
+  { "category": "ev_halleri", "prompt": "Uyumadan önce evdeki bütün kapıları bir kez kontrol ediyor." },
+
+  { "category": "jestler", "prompt": "Arada kısa el yazısı notlar bırakıyor." },
+  { "category": "jestler", "prompt": "Hediye seçmeden önce ne istediğini doğrudan soruyor." },
+  { "category": "jestler", "prompt": "Sevgisini çoğunlukla sevdiğin bir yemeği hazırlayarak gösteriyor." },
+  { "category": "jestler", "prompt": "Doğum gününde kalabalık bir kutlama düzenlemek istiyor." },
+  { "category": "jestler", "prompt": "Romantik hediyeler yerine günlük hayatını kolaylaştıracak şeyler seçiyor." },
+  { "category": "jestler", "prompt": "İlk buluşmanız gibi küçük yıldönümlerini de hatırlıyor." },
+
+  { "category": "sosyal_hayat", "prompt": "Arkadaş gruplarınızın ayrı kalmasını seviyor." },
+  { "category": "sosyal_hayat", "prompt": "Sosyal medyada ilişkinizle ilgili çok az paylaşım yapıyor." },
+  { "category": "sosyal_hayat", "prompt": "Ayda birkaç akşamı yalnızca arkadaşlarıyla geçirmek istiyor." },
+  { "category": "sosyal_hayat", "prompt": "Davetlere çoğunlukla çift olarak katılmayı tercih ediyor." },
+  { "category": "sosyal_hayat", "prompt": "Ortak arkadaş grubunda senden daha sık plan başlatıyor." },
+  { "category": "sosyal_hayat", "prompt": "Yeni bir ortamda senden daha hızlı sohbete karışıyor." },
+
+  { "category": "iletisim", "prompt": "Zor bir konuyu konuşmadan önce düşünmek için zaman istiyor." },
+  { "category": "iletisim", "prompt": "Gergin bir konuşmayı küçük bir şakayla yumuşatıyor." },
+  { "category": "iletisim", "prompt": "Bir sorun anlattığında önce çözüm önermeye başlıyor." },
+  { "category": "iletisim", "prompt": "Yüz yüze söylemekte zorlandığı şeyi kısa bir notla anlatıyor." },
+  { "category": "iletisim", "prompt": "Her akşam günün nasıl geçtiğini konuşmak istiyor." },
+  { "category": "iletisim", "prompt": "Fikir ayrılığında ne istediğini doğrudan söylüyor." },
+
+  { "category": "para", "prompt": "Ortak masrafları gelire göre orantılı paylaşmayı öneriyor." },
+  { "category": "para", "prompt": "Birikim yerine birlikte deneyim yaşamaya daha çok para ayırıyor." },
+  { "category": "para", "prompt": "Kişisel hesaplarınız ayrı kalırken ortak bir bütçe açmak istiyor." },
+  { "category": "para", "prompt": "Hediye alırken fiyatından çok kullanımını önemsiyor." },
+  { "category": "para", "prompt": "Tatil bütçesini ayrıntılı bir tabloyla planlıyor." },
+  { "category": "para", "prompt": "Dışarı çıktığınızda hesabı sırayla ödemeyi tercih ediyor." },
+
+  { "category": "komik_huylar", "prompt": "Sesli mesajları bazen küçük bir podcast kadar uzun sürüyor." },
+  { "category": "komik_huylar", "prompt": "Film izlerken bir sonraki sahneyi tahmin etmeye çalışıyor." },
+  { "category": "komik_huylar", "prompt": "Tabağındaki patateslerden birini alıp sonra haber veriyor." },
+  { "category": "komik_huylar", "prompt": "Evcil hayvanlarla konuşurken farklı bir ses kullanıyor." },
+  { "category": "komik_huylar", "prompt": "Bilmediği şarkı sözlerinin yerine kendi sözlerini uyduruyor." },
+  { "category": "komik_huylar", "prompt": "Uyurken battaniyenin çoğunu kendi tarafına çekiyor." }
+]

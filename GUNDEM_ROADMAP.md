@@ -6,6 +6,7 @@ Her geliştirme döngüsünde yalnızca ilk hazır olmayan mod ele alınır. Mod
 - [x] Beni Yakala — partner cevabı tahmini ve özel sonuç kartı
 - [x] Randevu Ruleti — yemek, etkinlik ve tatlı seçimlerinden paylaşılabilir sürpriz buluşma planı
 - [x] Emoji Şifre — dönüşümlü rollerle üç emojilik ipucundan ortak anıyı veya kelimeyi yakalama ve 9:16 Story kartı
-- [ ] Kırmızı mı Yeşil mi? — hızlı senaryo değerlendirmesi ve çift uyum özeti
+- [x] Kırmızı mı Yeşil mi? — sekiz güvenli senaryoda gizli üç renk seçimi, ortak radar özeti ve 9:16 Story kartı
+- [ ] Kim Daha Muhtemel? — sekiz kısa çift sorusunda gizli oy, ortak/ayrışan sonuç ve 9:16 Story özeti
 
-Sıradaki mod: **Kırmızı mı Yeşil mi?**
+Sıradaki mod: **Kim Daha Muhtemel?**

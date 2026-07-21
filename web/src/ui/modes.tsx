@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconEmojiCode, IconHeartsDuo, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
+import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -67,8 +67,14 @@ export const MODE_META: Record<GameMode, ModeMeta> = {
     name: 'Emoji Şifre',
     desc: 'Üç emojiyle anlat; sevgilin gizli kelimeyi çözsün.',
     joker: '4 tur · Kodla ve çöz',
-    badge: 'YENİ · 1 DK',
     Icon: IconEmojiCode,
+  },
+  kirmizi_yesil: {
+    name: 'Kırmızı mı Yeşil mi?',
+    desc: 'Aynı senaryoya gizlice renk verin; cevaplar birlikte açılsın.',
+    joker: '8 tur · 3 gizli renk',
+    badge: 'YENİ · 1 DK',
+    Icon: IconFlagRadar,
   },
   kor_siralama: {
     name: 'Kör Sıralama',

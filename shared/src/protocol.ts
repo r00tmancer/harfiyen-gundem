@@ -26,7 +26,8 @@ export type GameMode =
   | 'kor_siralama'
   | 'beni_yakala'
   | 'randevu_ruleti'
-  | 'emoji_sifre';
+  | 'emoji_sifre'
+  | 'kirmizi_yesil';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -64,6 +65,11 @@ export const EMOJI_SIFRE_PALETTE = [
   '⭐', '🍕', '☕', '🎬', '🎮', '🚀', '🏠', '🌊',
   '🐱', '🎁', '📱', '🌧️', '🚗', '🍦', '🎵', '💃',
 ] as const;
+
+// Kirmizi mi Yesil mi? — ayni senaryoya gizli red/depends/green oylari
+export const KIRMIZI_YESIL_ROUNDS = 8;
+export const KIRMIZI_YESIL_VOTE_MS = 9_000;
+export const KIRMIZI_YESIL_REVEAL_MS = 2_200;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -114,6 +120,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   beni_yakala: null, // bu modda joker yok
   randevu_ruleti: null, // bu modda joker yok
   emoji_sifre: null, // bu kisa co-op modunda joker yok
+  kirmizi_yesil: null, // bu hizli uyum testinde joker yok
 };
 
 export const TR_LETTERS = [
@@ -169,6 +176,8 @@ export type Phase =
   | 'emoji_sifre_encode' // (emoji sifre) kodlayici hedefi uc emojiyle anlatiyor
   | 'emoji_sifre_guess' // (emoji sifre) cozucu dort secenekten tahmin ediyor
   | 'emoji_sifre_reveal' // (emoji sifre) hedef, kod ve tahmin aciliyor
+  | 'kirmizi_yesil_vote' // (kirmizi mi yesil mi) iki oyuncu gizlice oy veriyor
+  | 'kirmizi_yesil_reveal' // (kirmizi mi yesil mi) iki oy aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -337,6 +346,58 @@ export interface EmojiSifreState {
   reveal: EmojiSifreReveal | null;
 }
 
+export type KirmiziYesilChoice = 'red' | 'depends' | 'green';
+export type KirmiziYesilCategory =
+  | 'mesajlasma'
+  | 'plan_zaman'
+  | 'ev_halleri'
+  | 'jestler'
+  | 'sosyal_hayat'
+  | 'iletisim'
+  | 'para'
+  | 'komik_huylar';
+export type KirmiziYesilResolution =
+  | 'red_together'
+  | 'depends_together'
+  | 'green_together'
+  | 'split'
+  | 'solo'
+  | 'skipped';
+
+export interface KirmiziYesilScenario {
+  category: KirmiziYesilCategory;
+  prompt: string;
+}
+
+export interface KirmiziYesilReveal {
+  round: number;
+  category: KirmiziYesilCategory;
+  prompt: string;
+  votes: Record<string, KirmiziYesilChoice | null>;
+  match: boolean;
+  consensus: KirmiziYesilChoice | null;
+  resolution: KirmiziYesilResolution;
+}
+
+export interface KirmiziYesilState {
+  round: number; // 1..KIRMIZI_YESIL_ROUNDS
+  category: KirmiziYesilCategory;
+  prompt: string;
+  myLocked: boolean;
+  opponentLocked: boolean;
+  myChoice: KirmiziYesilChoice | null; // yalniz alicinin kendi aktif oyu
+  matches: number;
+  redMatches: number;
+  dependsMatches: number;
+  greenMatches: number;
+  jointRounds: number;
+  splitRounds: number;
+  missedRounds: number;
+  history: KirmiziYesilReveal[]; // yalniz tamamlanip acilmis turlar
+  reveal: KirmiziYesilReveal | null;
+  compatibility: number | null; // yalniz match_end fazinda
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -370,6 +431,7 @@ export interface RoomSnapshot {
   beniYakala: BeniYakalaState | null;
   randevuRuleti: RandevuRuletiState | null;
   emojiSifre: EmojiSifreState | null;
+  kirmiziYesil: KirmiziYesilState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -389,6 +451,7 @@ export type ClientMsg =
   | { t: 'randevu_ruleti_pick'; choice: number; round: number } // choice 0..5; stale tur reddedilir
   | { t: 'emoji_sifre_code'; emojis: EmojiSifreCode; round: number } // ayni emoji birden cok kez kullanilabilir
   | { t: 'emoji_sifre_guess'; choice: number; round: number } // choice 0..3; stale tur reddedilir
+  | { t: 'kirmizi_yesil_vote'; choice: KirmiziYesilChoice; round: number } // stale tur ve tekrar oy reddedilir
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

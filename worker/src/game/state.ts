@@ -8,6 +8,9 @@ import type {
   EmojiSifreOptions,
   EmojiSifreReveal,
   GameMode,
+  KirmiziYesilChoice,
+  KirmiziYesilReveal,
+  KirmiziYesilScenario,
   KorSiralamaPack,
   Phase,
   RandevuPlanItem,
@@ -124,6 +127,24 @@ export interface EmojiSifreServer {
   reveal: EmojiSifreReveal | null;
 }
 
+// Kirmizi mi Yesil mi?: aktif oylar reveal'e kadar yalniz sunucuda kalir.
+// Mac icin secilen gelecek senaryolar recipient snapshot'a hic tasinmaz.
+export interface KirmiziYesilServer {
+  scenarios: KirmiziYesilScenario[];
+  roundIndex: number; // 0 tabanli
+  votes: Record<string, KirmiziYesilChoice>;
+  matches: number;
+  redMatches: number;
+  dependsMatches: number;
+  greenMatches: number;
+  jointRounds: number;
+  splitRounds: number;
+  missedRounds: number;
+  history: KirmiziYesilReveal[];
+  reveal: KirmiziYesilReveal | null;
+  compatibility: number | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -157,6 +178,7 @@ export interface RoomState {
   beniYakala: BeniYakalaServer | null;
   randevuRuleti: RandevuRuletiServer | null;
   emojiSifre: EmojiSifreServer | null;
+  kirmiziYesil: KirmiziYesilServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

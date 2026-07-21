@@ -249,6 +249,20 @@ export function IconEmojiCode({ size = 22, ...props }: { size?: number } & SVGPr
   );
 }
 
+// iki renkli iliski radari: kirmizi / duruma bagli / yesil secim modu
+export function IconFlagRadar({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <circle cx="12" cy="12" r="9" fill="currentColor" fillOpacity={0.08} />
+      <path d="M12 12V5.8M12 12l4.6-3.5" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <path d="M5.1 15.5V7.2h4.7l-1.5 1.9 1.5 1.9H5.1" strokeWidth={1.8} />
+      <path d="M18.9 15.5V7.2h-4.7l1.5 1.9-1.5 1.9h4.7" strokeWidth={1.8} />
+      <path d="M8.3 18.5h7.4" strokeWidth={1.8} />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

@@ -22,15 +22,16 @@ export default function App() {
   const mode = useStore((s) => s.snapshot?.mode);
   const darkRandevu = mode === 'randevu_ruleti' && (screen === 'game' || screen === 'victory');
   const darkEmoji = mode === 'emoji_sifre' && (screen === 'game' || screen === 'victory');
-  const darkMode = darkRandevu || darkEmoji;
+  const darkFlags = mode === 'kirmizi_yesil' && (screen === 'game' || screen === 'victory');
+  const darkMode = darkRandevu || darkEmoji || darkFlags;
 
   useEffect(() => {
     const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const statusBar = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]');
-    theme?.setAttribute('content', darkEmoji ? '#0C0920' : darkRandevu ? '#09071A' : '#FFF6EC');
+    theme?.setAttribute('content', darkFlags ? '#0A0E16' : darkEmoji ? '#0C0920' : darkRandevu ? '#09071A' : '#FFF6EC');
     statusBar?.setAttribute('content', darkMode ? 'black-translucent' : 'default');
     document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
-  }, [darkEmoji, darkMode, darkRandevu]);
+  }, [darkEmoji, darkFlags, darkMode, darkRandevu]);
 
   return (
     <>

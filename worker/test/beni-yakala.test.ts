@@ -71,6 +71,7 @@ function gameState(phase: RoomState['phase'] = 'beni_yakala_answer'): RoomState 
     },
     randevuRuleti: null,
     emojiSifre: null,
+    kirmiziYesil: null,
   };
 }
 

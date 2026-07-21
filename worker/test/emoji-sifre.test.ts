@@ -111,6 +111,7 @@ function stateForGame(phase: RoomState['phase'] = 'emoji_sifre_encode'): RoomSta
       history: [],
       reveal: null,
     },
+    kirmiziYesil: null,
   };
 }
 

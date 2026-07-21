@@ -15,6 +15,7 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'set_mode', mode: 'kor_siralama' },
     { t: 'set_mode', mode: 'randevu_ruleti' },
     { t: 'set_mode', mode: 'emoji_sifre' },
+    { t: 'set_mode', mode: 'kirmizi_yesil' },
     { t: 'pick_letter', letter: 'İ' },
     { t: 'submit_word', word: 'incir' },
     { t: 'pick_number', value: 1 },
@@ -32,6 +33,9 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'emoji_sifre_code', emojis: [23, 12, 0], round: 4 },
     { t: 'emoji_sifre_guess', choice: 0, round: 1 },
     { t: 'emoji_sifre_guess', choice: 3, round: 4 },
+    { t: 'kirmizi_yesil_vote', choice: 'red', round: 1 },
+    { t: 'kirmizi_yesil_vote', choice: 'depends', round: 4 },
+    { t: 'kirmizi_yesil_vote', choice: 'green', round: 8 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -214,6 +218,25 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
       { t: 'emoji_sifre_guess', choice: 0, round: 1.5 },
       { t: 'emoji_sifre_guess', choice: 0 },
       { t: 'emoji_sifre_guess', choice: 0, round: 1, extra: null },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('kirmizi yesil oyunu exact-key choice ve 1..8 tur araliginda dogrular', () => {
+    const invalid = [
+      { t: 'kirmizi_yesil_vote', choice: 'RED', round: 1 },
+      { t: 'kirmizi_yesil_vote', choice: 'green ', round: 1 },
+      { t: 'kirmizi_yesil_vote', choice: 'maybe', round: 1 },
+      { t: 'kirmizi_yesil_vote', choice: true, round: 1 },
+      { t: 'kirmizi_yesil_vote', choice: 'red', round: 0 },
+      { t: 'kirmizi_yesil_vote', choice: 'green', round: 9 },
+      { t: 'kirmizi_yesil_vote', choice: 'depends', round: 1.5 },
+      { t: 'kirmizi_yesil_vote', choice: 'red', round: '1' },
+      { t: 'kirmizi_yesil_vote', choice: 'red' },
+      { t: 'kirmizi_yesil_vote', choice: 'red', round: 1, pid: 'p2' },
+      { t: 'kirmizi_yesil_vote', choice: 'red', round: 1, role: 'admin' },
     ];
     for (const value of invalid) {
       expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });

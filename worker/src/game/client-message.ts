@@ -6,6 +6,7 @@ import {
   EMOJI_SIFRE_PALETTE,
   EMOJI_SIFRE_ROUNDS,
   KOR_SIRALAMA_ITEMS,
+  KIRMIZI_YESIL_ROUNDS,
   RANDEVU_RULETI_CHOICE_COUNT,
   RANDEVU_RULETI_ROUNDS,
   REACTION_COUNT,
@@ -14,7 +15,7 @@ import {
   TR_LETTERS,
   normalizeTr,
 } from '@harfiyen/shared';
-import type { ClientMsg, EmojiSifreCode, GameMode } from '@harfiyen/shared';
+import type { ClientMsg, EmojiSifreCode, GameMode, KirmiziYesilChoice } from '@harfiyen/shared';
 
 // Normal oyun hamleleri birkac yuz byte'i gecmez. Sinir, JSON.parse oncesinde
 // uygulanir; boylece istemci tek cerceveyle DO'ya sinirsiz ayrıştırma isi veremez.
@@ -41,6 +42,7 @@ const GAME_MODES = {
   beni_yakala: true,
   randevu_ruleti: true,
   emoji_sifre: true,
+  kirmizi_yesil: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -75,6 +77,10 @@ function isEmojiSifreCode(value: unknown): value is EmojiSifreCode {
     value.length === EMOJI_SIFRE_CODE_COUNT &&
     value.every((entry) => isIntegerInRange(entry, 0, EMOJI_SIFRE_PALETTE.length - 1))
   );
+}
+
+function isKirmiziYesilChoice(value: unknown): value is KirmiziYesilChoice {
+  return value === 'red' || value === 'depends' || value === 'green';
 }
 
 function validateParsedMessage(value: unknown): ClientMsg | null {
@@ -170,6 +176,13 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         isIntegerInRange(value.choice, 0, EMOJI_SIFRE_OPTION_COUNT - 1) &&
         isIntegerInRange(value.round, 1, EMOJI_SIFRE_ROUNDS)
         ? { t: 'emoji_sifre_guess', choice: value.choice, round: value.round }
+        : null;
+
+    case 'kirmizi_yesil_vote':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isKirmiziYesilChoice(value.choice) &&
+        isIntegerInRange(value.round, 1, KIRMIZI_YESIL_ROUNDS)
+        ? { t: 'kirmizi_yesil_vote', choice: value.choice, round: value.round }
         : null;
 
     case 'use_joker':
