@@ -6,6 +6,7 @@ import {
   JOKER_FREEZE_MS,
   KOR_SIRALAMA_ITEMS,
   PICK_MS,
+  RANDEVU_RULETI_ROUNDS,
   RACE_MS,
   SUBMIT_THROTTLE_MS,
   TELEPATI_QUESTIONS,
@@ -16,7 +17,7 @@ import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, REJECT_TEXT, useStore } from '../store';
 import { send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconHeartSolid, IconRanking, IconSnowflake, IconSwap } from '../ui/icons';
+import { IconHeartSolid, IconRanking, IconRoulette, IconSnowflake, IconSwap } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, Stars, TimerBar, WinWash } from '../ui/parts';
 import { useRemaining, up } from '../hooks';
@@ -30,6 +31,7 @@ import { BomTurn } from './modes/BomGame';
 import { TelepatiReveal, TelepatiSoru } from './modes/TelepatiGame';
 import { KorSiralamaPick, KorSiralamaReveal } from './modes/KorSiralamaGame';
 import { BeniYakalaAnswer, BeniYakalaPredict, BeniYakalaReveal } from './modes/BeniYakalaGame';
+import { RandevuRuletiPick, RandevuRuletiReveal } from './modes/RandevuRuletiGame';
 
 // skor gostergesi moda gore: harf/uzun yildiz, sayi madalya, zincir/bom kalp, telepati ortak uyum
 function ScoreGauge({ snap, p }: { snap: RoomSnapshot; p: PlayerPublic }) {
@@ -60,10 +62,13 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
   const oppIdx = myIdx === 0 ? 1 : 0;
   const isRanking = snap.mode === 'kor_siralama';
   const isReading = snap.mode === 'beni_yakala';
+  const isRoulette = snap.mode === 'randevu_ruleti';
   const matches = isRanking
     ? (snap.korSiralama?.exactMatches ?? 0)
     : isReading
       ? (snap.beniYakala?.reads[snap.you] ?? 0)
+      : isRoulette
+        ? (snap.randevuRuleti?.matches ?? 0)
       : (snap.telepati?.matches ?? 0);
   const countRef = useRef<HTMLSpanElement>(null);
   const prev = useRef(matches);
@@ -76,17 +81,17 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
 
   return (
     <div
-      className="flex items-center justify-between gap-2 rounded-2xl border-[3px] px-3 py-2"
+      className={`flex items-center justify-between gap-2 rounded-2xl border-[3px] px-3 py-2 ${isRoulette ? 'roulette-coop' : ''}`}
       style={{
-        borderColor: 'var(--ink)',
-        background: 'var(--p1-soft)',
-        boxShadow: '0 4px 0 var(--shadow-ink)',
+        borderColor: isRoulette ? '#8B6FD2' : 'var(--ink)',
+        background: isRoulette ? '#15112B' : 'var(--p1-soft)',
+        boxShadow: isRoulette ? '0 4px 0 rgba(168,117,255,.28)' : '0 4px 0 var(--shadow-ink)',
       }}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={38} />}
         <span className="inline-flex shrink-0" style={{ color: 'var(--p1)' }} aria-hidden="true">
-          {isRanking ? <IconRanking size={20} /> : <IconHeartSolid size={20} />}
+          {isRanking ? <IconRanking size={20} /> : isRoulette ? <IconRoulette size={20} /> : <IconHeartSolid size={20} />}
         </span>
         {opp && (
           <Avatar
@@ -102,8 +107,14 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
         </p>
       </div>
       <span ref={countRef} className="chip chip-p1 font-display shrink-0 text-base">
-        {isRanking ? <IconRanking size={15} /> : <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />}
-        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : 'uyum'}
+        {isRanking ? (
+          <IconRanking size={15} />
+        ) : isRoulette ? (
+          <IconRoulette size={15} style={{ color: '#55E7FF' }} />
+        ) : (
+          <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />
+        )}
+        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : isRoulette ? 'aynı seçim' : 'uyum'}
       </span>
     </div>
   );
@@ -621,7 +632,7 @@ export default function Game() {
   const mode = snapshot.mode;
 
   return (
-    <div ref={rootRef} className="flex w-full flex-col gap-4 pt-3 pb-6">
+    <div ref={rootRef} className={`flex w-full flex-col gap-4 pt-3 pb-6 ${mode === 'randevu_ruleti' ? 'roulette-shell' : ''}`}>
       {boomFx && (
         <div key={boomFx.key} aria-hidden="true">
           <div className="boom-flash" />
@@ -629,7 +640,7 @@ export default function Game() {
         </div>
       )}
       {/* ko-op modlar: vs yerine yan yana avatarlar + ortak ilerleme */}
-      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' ? (
+      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' || mode === 'randevu_ruleti' ? (
         <CoopScoreBar snap={snapshot} />
       ) : (
         <ScoreBar snap={snapshot} />
@@ -646,6 +657,8 @@ export default function Game() {
                   ? 'Kart'
                   : mode === 'beni_yakala'
                     ? 'Tur'
+                    : mode === 'randevu_ruleti'
+                      ? 'Plan'
                   : 'Raunt'}{' '}
           {snapshot.round}
           {mode === 'telepati'
@@ -654,6 +667,8 @@ export default function Game() {
               ? `/${KOR_SIRALAMA_ITEMS}`
               : mode === 'beni_yakala'
                 ? `/${BENI_YAKALA_ROUNDS}`
+                : mode === 'randevu_ruleti'
+                  ? `/${RANDEVU_RULETI_ROUNDS}`
                 : ''}
         </div>
         <div className="chip" style={{ background: 'color-mix(in srgb, var(--grape) 22%, #fff)' }}>
@@ -675,6 +690,8 @@ export default function Game() {
       {snapshot.phase === 'beni_yakala_answer' && <BeniYakalaAnswer snap={snapshot} />}
       {snapshot.phase === 'beni_yakala_predict' && <BeniYakalaPredict snap={snapshot} />}
       {snapshot.phase === 'beni_yakala_reveal' && <BeniYakalaReveal snap={snapshot} />}
+      {snapshot.phase === 'randevu_secim' && <RandevuRuletiPick snap={snapshot} />}
+      {snapshot.phase === 'randevu_reveal' && <RandevuRuletiReveal snap={snapshot} />}
       {snapshot.phase === 'round_end' &&
         (mode === 'sayi' ? (
           <SayiRoundEnd snap={snapshot} />

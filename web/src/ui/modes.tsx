@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconHeartsDuo, IconRanking, IconRuler, IconTarget, IconTilesDuo } from './icons';
+import { IconBomb, IconBurst, IconHeartsDuo, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -55,8 +55,14 @@ export const MODE_META: Record<GameMode, ModeMeta> = {
     name: 'Beni Yakala',
     desc: 'Önce kendini seç, sonra sevgilinin cevabını tahmin et.',
     joker: '5 tur · 4 gizli seçenek',
-    badge: 'YENİ · 2 DK',
     Icon: IconHeartsDuo,
+  },
+  randevu_ruleti: {
+    name: 'Randevu Ruleti',
+    desc: 'Gizlice seçin; üç tur sonunda bu geceki planınız hazır.',
+    joker: 'Yemek · Etkinlik · Tatlı',
+    badge: 'YENİ · 1 DK',
+    Icon: IconRoulette,
   },
   kor_siralama: {
     name: 'Kör Sıralama',

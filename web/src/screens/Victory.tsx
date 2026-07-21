@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { BENI_YAKALA_ROUNDS, BOM_LIVES, KOR_SIRALAMA_ITEMS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
-import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
+import { BENI_YAKALA_ROUNDS, BOM_LIVES, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import type { PlayerPublic, RandevuCategory, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconHeartSolid, IconRanking, IconShare } from '../ui/icons';
+import { IconHeartSolid, IconRanking, IconRoulette, IconShare } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
@@ -13,6 +13,7 @@ import { haptics } from '../fx/haptics';
 import { up } from '../hooks';
 import { createKorShareCard } from '../share/korSiralamaCard';
 import { createBeniYakalaShareCard } from '../share/beniYakalaCard';
+import { createRandevuRuletiShareCard } from '../share/randevuRuletiCard';
 import { PUBLIC_URL } from '../config';
 
 const GAME_URL = PUBLIC_URL;
@@ -98,6 +99,10 @@ function isKoopBeniYakala(snap: RoomSnapshot): boolean {
   return snap.mode === 'beni_yakala' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopRandevuRuleti(snap: RoomSnapshot): boolean {
+  return snap.mode === 'randevu_ruleti' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -111,6 +116,16 @@ function korSiralamaPct(snap: RoomSnapshot): number {
 function beniYakalaPct(snap: RoomSnapshot): number {
   const reads = Object.values(snap.beniYakala?.reads ?? {});
   return Math.round((Math.max(0, ...reads) / BENI_YAKALA_ROUNDS) * 100);
+}
+
+function randevuRuletiPct(snap: RoomSnapshot): number {
+  return Math.round(((snap.randevuRuleti?.matches ?? 0) / RANDEVU_RULETI_ROUNDS) * 100);
+}
+
+function randevuCategoryLabel(category: RandevuCategory): string {
+  if (category === 'yemek') return 'Yemek';
+  if (category === 'etkinlik') return 'Etkinlik';
+  return 'Tatlı';
 }
 
 function uyumTitle(pct: number): string {
@@ -247,6 +262,7 @@ export default function Victory() {
   const rematchWants = useStore((s) => s.rematchWants);
   const matchEndSeq = useStore((s) => s.matchEndSeq);
   const oppConnected = useStore((s) => s.oppConnected);
+  const connected = useStore((s) => s.conn === 'open');
   const finalWord = useStore((s) => s.finalWord);
   const wordInfos = useStore((s) => s.wordInfos);
   const root = useRef<HTMLDivElement>(null);
@@ -264,14 +280,21 @@ export default function Victory() {
     // matchEndSeq 0 ise mac sonu mesaji bu oturumda gelmedi (sayfa yenileme) — kutlama yok
     if (!snapshot || matchEndSeq === 0 || matchEndSeq === celebratedSeq) return;
     // ko-op modlar: kazanan yok, yuksek uyumda kalp yagmuru
-    if (isKoopTelepati(snapshot) || isKoopKorSiralama(snapshot) || isKoopBeniYakala(snapshot)) {
+    if (
+      isKoopTelepati(snapshot) ||
+      isKoopKorSiralama(snapshot) ||
+      isKoopBeniYakala(snapshot) ||
+      isKoopRandevuRuleti(snapshot)
+    ) {
       celebratedSeq = matchEndSeq;
       haptics.victory();
       const pct = isKoopTelepati(snapshot)
         ? telepatiPct(snapshot)
         : isKoopKorSiralama(snapshot)
           ? korSiralamaPct(snapshot)
-          : beniYakalaPct(snapshot);
+          : isKoopBeniYakala(snapshot)
+            ? beniYakalaPct(snapshot)
+            : randevuRuletiPct(snapshot);
       if (pct >= 70) heartRain();
       return;
     }
@@ -297,6 +320,8 @@ export default function Victory() {
       ? `Kör Sıralama'da listelerimiz %${korSiralamaPct(snapshot)} uydu! Siz de geleceği görmeden sıralayın: ${GAME_URL}`
       : isKoopBeniYakala(snapshot) && me && opp
         ? `Beni Yakala'da ${opp.nick} kalbimi ${snapshot.beniYakala?.reads[opp.id] ?? 0}/${BENI_YAKALA_ROUNDS} okudu! Siz de deneyin: ${GAME_URL}`
+      : isKoopRandevuRuleti(snapshot)
+        ? `Randevu Ruleti planımız hazır: ${snapshot.randevuRuleti?.plan.map((item) => item.label).join(' → ') ?? 'sürpriz randevu'} · ${snapshot.randevuRuleti?.matches ?? 0}/${RANDEVU_RULETI_ROUNDS} aynı seçim! Siz de deneyin: ${GAME_URL}`
       : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
@@ -327,8 +352,25 @@ export default function Victory() {
             url: GAME_URL,
           })
       : undefined;
-  const shareTitle = isKoopBeniYakala(snapshot)
-    ? 'Beni Yakala Sonucu'
+  const randevu = snapshot.randevuRuleti;
+  const makeRandevuShareFile =
+    isKoopRandevuRuleti(snapshot) && me && opp && randevu
+      ? () =>
+          createRandevuRuletiShareCard({
+            playerA: me.nick,
+            playerB: opp.nick,
+            exactMatches: randevu.matches,
+            plan: randevu.plan.map((item) => ({
+              category: randevuCategoryLabel(item.category),
+              choice: item.label,
+            })),
+            url: GAME_URL,
+          })
+      : undefined;
+  const shareTitle = isKoopRandevuRuleti(snapshot)
+    ? 'Randevu Ruleti Sonucu'
+    : isKoopBeniYakala(snapshot)
+      ? 'Beni Yakala Sonucu'
     : isKoopKorSiralama(snapshot)
       ? 'Kör Sıralama Sonucu'
       : 'Harfiyen Sonucu';
@@ -351,15 +393,19 @@ export default function Victory() {
         <button
           type="button"
           className="btn-candy btn-mint btn-lg btn-block"
-          disabled={mineWant}
+          disabled={mineWant || !connected}
           onClick={() => {
             send({ t: 'rematch' });
           }}
         >
-          {mineWant ? `Rövanş istendi (${rematchWants.length}/2)` : 'Rövanş'}
+          {!connected ? 'Bağlanılıyor…' : mineWant ? `Rövanş istendi (${rematchWants.length}/2)` : 'Rövanş'}
         </button>
         {/* ikincil aksiyon: rovansin altinda */}
-        <ShareButton text={shareMsg} title={shareTitle} makeFile={makeBeniShareFile ?? makeKorShareFile} />
+        <ShareButton
+          text={shareMsg}
+          title={shareTitle}
+          makeFile={makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
+        />
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
         </button>
@@ -474,6 +520,69 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op randevu ruleti: uc parcalik ortak plan ----
+  if (isKoopRandevuRuleti(snapshot)) {
+    const r = snapshot.randevuRuleti;
+    const plan = Array.from({ length: RANDEVU_RULETI_ROUNDS }, (_, index) =>
+      r?.plan[index] ?? {
+        category: (['yemek', 'etkinlik', 'tatli'] as RandevuCategory[])[index],
+        choice: -1,
+        label: 'Sürpriz seçim',
+      },
+    );
+    return (
+      <div ref={root} className="roulette-shell roulette-victory flex w-full flex-col items-center gap-4 pt-5 pb-6 text-center">
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="roulette-final-icon" aria-hidden="true">
+            <IconRoulette size={38} />
+          </span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <div data-pop>
+          <p className="roulette-kicker">Kozmik karar tamamlandı</p>
+          <h1 className="font-display text-[35px] leading-none font-extrabold">Randevunuz Hazır!</h1>
+        </div>
+        <div data-pop className="roulette-chip roulette-chip-cyan">
+          {MODE_META.randevu_ruleti.name}
+          {opp ? ` · ${me?.nick ?? ''} + ${opp.nick}` : ''}
+        </div>
+
+        <div data-pop className="roulette-final-score" role="status" aria-label={`${r?.matches ?? 0} turda aynı seçim`}>
+          <IconHeartSolid size={23} />
+          <strong>{r?.matches ?? 0}/{RANDEVU_RULETI_ROUNDS}</strong>
+          <span>aynı seçim</span>
+        </div>
+
+        <ol data-pop className="roulette-final-plan" aria-label="Üç parçalı randevu planınız">
+          {plan.map((item, index) => (
+            <li key={`${item.category}-${index}`}>
+              <span aria-hidden="true">{index + 1}</span>
+              <div>
+                <small>{randevuCategoryLabel(item.category)}</small>
+                <strong>{item.label}</strong>
+              </div>
+              <i aria-hidden="true">{index === 0 ? '✦' : index === 1 ? '◉' : '★'}</i>
+            </li>
+          ))}
+        </ol>
+
+        <p data-pop className="roulette-privacy">
+          Story görselinde yalnızca isimler, ortak plan ve uyum özeti yer alır; gizli ham seçimleriniz paylaşılmaz.
         </p>
         {footer}
       </div>

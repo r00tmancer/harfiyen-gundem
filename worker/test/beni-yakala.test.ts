@@ -69,6 +69,7 @@ function gameState(phase: RoomState['phase'] = 'beni_yakala_answer'): RoomState 
       mutualReads: 0,
       reveal: null,
     },
+    randevuRuleti: null,
   };
 }
 

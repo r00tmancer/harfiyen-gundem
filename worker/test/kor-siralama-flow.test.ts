@@ -67,6 +67,7 @@ function stateForRank(): RoomState {
       compatibility: null,
     },
     beniYakala: null,
+    randevuRuleti: null,
   };
 }
 

@@ -7,6 +7,9 @@ import type {
   GameMode,
   KorSiralamaPack,
   Phase,
+  RandevuPlanItem,
+  RandevuRuletiReveal,
+  RandevuRuletiRound,
   ServerMsg,
   TelepatiQuestion,
 } from '@harfiyen/shared';
@@ -86,6 +89,18 @@ export interface BeniYakalaServer {
   reveal: BeniYakalaReveal | null;
 }
 
+// Randevu Ruleti: aktif picks haritasi reveal'e kadar yalniz sunucuda kalir.
+// Tamamlanan reveal/history ve plan reconnect ile kalici olarak geri gelir.
+export interface RandevuRuletiServer {
+  rounds: RandevuRuletiRound[];
+  roundIndex: number; // 0 tabanli
+  picks: Record<string, number>; // pid -> 0..5; eksik = timeout/henuz kilitlemedi
+  matches: number;
+  plan: RandevuPlanItem[];
+  history: RandevuRuletiReveal[];
+  reveal: RandevuRuletiReveal | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -117,6 +132,7 @@ export interface RoomState {
   telepati: TelepatiServer | null;
   korSiralama: KorSiralamaServer | null;
   beniYakala: BeniYakalaServer | null;
+  randevuRuleti: RandevuRuletiServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

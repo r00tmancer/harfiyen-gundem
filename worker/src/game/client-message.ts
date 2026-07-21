@@ -2,6 +2,8 @@ import {
   BENI_YAKALA_OPTION_COUNT,
   BENI_YAKALA_ROUNDS,
   KOR_SIRALAMA_ITEMS,
+  RANDEVU_RULETI_CHOICE_COUNT,
+  RANDEVU_RULETI_ROUNDS,
   REACTION_COUNT,
   SAYI_MAX,
   SAYI_MIN,
@@ -33,6 +35,7 @@ const GAME_MODES = {
   telepati: true,
   kor_siralama: true,
   beni_yakala: true,
+  randevu_ruleti: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -133,6 +136,13 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         isIntegerInRange(value.choice, 0, BENI_YAKALA_OPTION_COUNT - 1) &&
         isIntegerInRange(value.round, 1, BENI_YAKALA_ROUNDS)
         ? { t: 'beni_yakala_predict', choice: value.choice, round: value.round }
+        : null;
+
+    case 'randevu_ruleti_pick':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isIntegerInRange(value.choice, 0, RANDEVU_RULETI_CHOICE_COUNT - 1) &&
+        isIntegerInRange(value.round, 1, RANDEVU_RULETI_ROUNDS)
+        ? { t: 'randevu_ruleti_pick', choice: value.choice, round: value.round }
         : null;
 
     case 'use_joker':

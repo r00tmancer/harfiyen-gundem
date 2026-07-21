@@ -223,6 +223,18 @@ export function IconRanking({ size = 22, ...props }: { size?: number } & SVGProp
   );
 }
 
+// neon rulet carki: randevu ruleti modu
+export function IconRoulette({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <circle cx="12" cy="12" r="8.8" fill="currentColor" fillOpacity={0.12} />
+      <circle cx="12" cy="12" r="2.1" fill="currentColor" />
+      <path d="M12 3.2v6.7M12 14.1v6.7M3.2 12h6.7M14.1 12h6.7M5.8 5.8l4.7 4.7M13.5 13.5l4.7 4.7M18.2 5.8l-4.7 4.7M10.5 13.5l-4.7 4.7" strokeWidth={1.7} />
+      <path d="M9.1 1.8h5.8L12 5.7z" fill="currentColor" stroke="currentColor" strokeWidth={1.2} />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

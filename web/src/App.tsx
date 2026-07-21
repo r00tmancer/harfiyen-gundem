@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStore } from './store';
 import Home from './screens/Home';
 import Lobby from './screens/Lobby';
@@ -18,6 +19,17 @@ function ConnToast() {
 
 export default function App() {
   const screen = useStore((s) => s.screen);
+  const mode = useStore((s) => s.snapshot?.mode);
+  const darkRandevu = mode === 'randevu_ruleti' && (screen === 'game' || screen === 'victory');
+
+  useEffect(() => {
+    const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const statusBar = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]');
+    theme?.setAttribute('content', darkRandevu ? '#09071A' : '#FFF6EC');
+    statusBar?.setAttribute('content', darkRandevu ? 'black-translucent' : 'default');
+    document.documentElement.style.colorScheme = darkRandevu ? 'dark' : 'light';
+  }, [darkRandevu]);
+
   return (
     <>
       <main className="app-shell mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-4">

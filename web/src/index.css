@@ -1084,6 +1084,509 @@ body {
   .beni-reveal-card { padding: 9px; }
 }
 
+/* ---- randevu ruleti: gece/uzay neon modu ---- */
+.roulette-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100dvh - env(safe-area-inset-top));
+  color: #F9F6FF;
+}
+.roulette-shell::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 12% 9%, rgba(255, 98, 176, 0.22), transparent 32%),
+    radial-gradient(circle at 88% 64%, rgba(85, 231, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 48% 110%, rgba(168, 117, 255, 0.2), transparent 38%),
+    linear-gradient(165deg, #09071A, #17112F 54%, #080615);
+  content: '';
+}
+.roulette-shell::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 16px 22px, rgba(255, 255, 255, 0.62) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 48px 64px, rgba(85, 231, 255, 0.5) 0 1.3px, transparent 1.9px),
+    radial-gradient(circle at 78px 30px, rgba(255, 98, 176, 0.44) 0 1px, transparent 1.6px);
+  background-size: 94px 94px;
+  content: '';
+  opacity: 0.48;
+  pointer-events: none;
+}
+.roulette-shell .chip-soft {
+  border-color: #7E6BA8;
+  background: rgba(25, 20, 49, 0.86);
+  color: #E7DFFF;
+}
+.roulette-shell .timer-track {
+  border-color: #76649F;
+  background: #17122C;
+  box-shadow: 0 0 14px rgba(85, 231, 255, 0.18);
+}
+.roulette-shell .timer-fill {
+  background: linear-gradient(90deg, #A875FF, #55E7FF);
+  box-shadow: 0 0 12px rgba(85, 231, 255, 0.7);
+}
+.roulette-shell .timer-fill.low { background: #FF6B8F; }
+.roulette-coop {
+  border-color: #8B6FD2 !important;
+  background: rgba(21, 17, 43, 0.94) !important;
+  box-shadow: 0 4px 0 rgba(168, 117, 255, 0.28), 0 0 20px rgba(85, 231, 255, 0.12) !important;
+  color: #F9F6FF;
+}
+.roulette-coop .chip-p1 {
+  border-color: #FF62B0;
+  background: #2B1839;
+  color: #F9F6FF;
+}
+.roulette-panel {
+  --roulette-accent: #FF62B0;
+  position: relative;
+  width: 100%;
+}
+.roulette-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.roulette-steps li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border: 2px solid #66568E;
+  border-radius: 999px;
+  background: rgba(19, 15, 40, 0.88);
+  color: #9E94BD;
+  font-size: 10px;
+  line-height: 1;
+}
+.roulette-steps li span {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  place-items: center;
+  border-radius: 999px;
+  background: #322650;
+  color: #D8CFFF;
+  font-size: 10px;
+}
+.roulette-steps li strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roulette-steps li.done {
+  border-color: #45F0C1;
+  color: #C9FFEF;
+}
+.roulette-steps li.done span { background: #45F0C1; color: #09071A; }
+.roulette-steps li.active {
+  border-color: var(--roulette-accent);
+  background: color-mix(in srgb, var(--roulette-accent) 18%, #17112F);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--roulette-accent) 42%, transparent);
+  color: #FFF;
+}
+.roulette-steps li.active span { background: var(--roulette-accent); color: #09071A; }
+.roulette-kicker {
+  margin: 0 0 2px;
+  color: var(--roulette-accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.roulette-timer {
+  display: inline-grid;
+  min-width: 60px;
+  min-height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2.5px solid #55E7FF;
+  border-radius: 15px;
+  background: #15112A;
+  box-shadow: 0 0 16px rgba(85, 231, 255, 0.3);
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+}
+.roulette-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.roulette-choice {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 9px 10px 35px;
+  overflow: hidden;
+  border: 2.5px solid #75649F;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(37, 29, 70, 0.96), rgba(18, 15, 39, 0.98));
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.33);
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  touch-action: manipulation;
+  transition: transform 90ms ease, border-color 130ms ease, opacity 130ms ease, box-shadow 130ms ease;
+}
+.roulette-choice:not(:disabled):active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+.roulette-choice:focus-visible { outline: 3px solid #55E7FF; outline-offset: 2px; }
+.roulette-choice:disabled { cursor: default; opacity: 0.4; }
+.roulette-choice.selected {
+  border-color: var(--roulette-accent);
+  background: color-mix(in srgb, var(--roulette-accent) 24%, #17112F);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--roulette-accent) 45%, transparent), 0 4px 0 rgba(0, 0, 0, 0.32);
+  transform: scale(1.015);
+}
+.roulette-choice.selected:disabled { opacity: 1; }
+.roulette-choice-orbit {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 2px solid var(--roulette-accent);
+  border-radius: 999px;
+  background: #100C25;
+  color: var(--roulette-accent);
+  font-size: 11px;
+  line-height: 1;
+}
+.roulette-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 6px 11px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: #17112F;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+}
+.roulette-chip-pink { color: #FF8BC5; }
+.roulette-chip-cyan { color: #8BEEFF; }
+.roulette-privacy {
+  margin: 0;
+  color: #AAA0C8;
+  font-size: 10.5px;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: center;
+}
+.roulette-reveal-title {
+  margin: 0;
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: clamp(29px, 10vw, 42px);
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 0 18px var(--roulette-accent);
+}
+.roulette-player-card {
+  display: flex;
+  min-width: 0;
+  min-height: 128px;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  border: 2.5px solid #6B5A94;
+  border-radius: 20px;
+  background: rgba(23, 17, 47, 0.95);
+  color: #F9F6FF;
+}
+.roulette-player-card p {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: #BEB5DA;
+  font-size: 10px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roulette-player-card strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.05;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.roulette-player-card > span {
+  margin-top: auto;
+  color: #45F0C1;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.roulette-player-card.plan-choice { border-color: #45F0C1; box-shadow: 0 0 15px rgba(69, 240, 193, 0.24); }
+.roulette-player-card.timed-out { opacity: 0.67; border-style: dashed; }
+.roulette-wheel-stage {
+  position: relative;
+  display: flex;
+  min-height: 145px;
+  align-items: center;
+  padding: 10px 10px 10px 128px;
+  border: 2.5px solid #705CA2;
+  border-radius: 22px;
+  background: rgba(18, 14, 39, 0.94);
+  overflow: hidden;
+}
+.roulette-wheel {
+  position: absolute;
+  left: 12px;
+  display: grid;
+  width: 106px;
+  height: 106px;
+  place-items: center;
+  border: 4px solid #F9F6FF;
+  border-radius: 999px;
+  background: conic-gradient(#FF62B0 0 25%, #55E7FF 25% 50%, #FFD166 50% 75%, #A875FF 75%);
+  box-shadow: 0 0 22px rgba(168, 117, 255, 0.42);
+  animation: roulette-spin 1.75s cubic-bezier(.15,.7,.15,1) both;
+}
+.roulette-wheel::after {
+  width: 25px;
+  height: 25px;
+  border: 3px solid #F9F6FF;
+  border-radius: 999px;
+  background: #17112F;
+  content: '';
+}
+.roulette-wheel span { position: absolute; color: #09071A; font-size: 18px; font-weight: 900; }
+.roulette-wheel span:nth-child(1) { top: 10px; }
+.roulette-wheel span:nth-child(2) { right: 13px; }
+.roulette-wheel span:nth-child(3) { bottom: 9px; }
+.roulette-wheel span:nth-child(4) { left: 13px; }
+.roulette-pointer {
+  position: absolute;
+  top: 10px;
+  left: 52px;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  border-right: 10px solid transparent;
+  border-left: 10px solid transparent;
+  border-top: 23px solid #F9F6FF;
+  filter: drop-shadow(0 0 7px #FF62B0);
+}
+.roulette-result-pill {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+}
+.roulette-candidates {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) 15px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 5px;
+  color: #C9C1E8;
+  font-size: 8.5px;
+  font-weight: 850;
+  line-height: 1.05;
+  text-align: center;
+}
+.roulette-candidates span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.roulette-candidates b { color: #FF8BC5; font-size: 13px; }
+.roulette-result-pill small { color: #8BEEFF; font-size: 9px; font-weight: 900; letter-spacing: 0.08em; }
+.roulette-result-pill strong {
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.06;
+  overflow-wrap: anywhere;
+}
+.roulette-same-result {
+  display: flex;
+  width: 100%;
+  min-height: 92px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+  border: 2.5px solid #FF62B0;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,98,176,.22), rgba(168,117,255,.22));
+  box-shadow: 0 0 20px rgba(255, 98, 176, 0.2);
+  color: #FF8BC5;
+}
+.roulette-same-result div { display: flex; min-width: 0; flex-direction: column; }
+.roulette-same-result small { color: #C9C1E8; font-size: 9px; font-weight: 900; }
+.roulette-same-result strong { color: #FFF; font-family: var(--font-display); font-size: 20px; font-weight: 800; overflow-wrap: anywhere; }
+.roulette-timeout-result {
+  display: flex;
+  width: 100%;
+  min-height: 112px;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 15px;
+  border: 2.5px dashed #8B79B4;
+  border-radius: 22px;
+  background: rgba(23,17,47,.92);
+  color: #A875FF;
+  text-align: left;
+}
+.roulette-timeout-result > div { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+.roulette-timeout-result small { color: #B9AED5; font-size: 8.5px; font-weight: 900; letter-spacing: .07em; }
+.roulette-timeout-result strong { color: #F9F6FF; font-family: var(--font-display); font-size: 19px; font-weight: 800; line-height: 1.08; overflow-wrap: anywhere; }
+.roulette-timeout-result p { margin: 3px 0 0; color: #AFA5CA; font-size: 9.5px; font-weight: 750; line-height: 1.2; }
+.roulette-waiting-icon {
+  color: #55E7FF;
+  filter: drop-shadow(0 0 12px rgba(85, 231, 255, 0.7));
+  animation: roulette-wait 2.2s linear infinite;
+}
+.roulette-final-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 2.5px solid #55E7FF;
+  border-radius: 999px;
+  background: #17112F;
+  box-shadow: 0 0 20px rgba(85, 231, 255, 0.38);
+  color: #8BEEFF;
+}
+.roulette-final-score {
+  display: flex;
+  width: 100%;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2.5px solid #FF62B0;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255,98,176,.2), rgba(168,117,255,.19));
+  box-shadow: 0 0 22px rgba(255,98,176,.18);
+  color: #FF8BC5;
+}
+.roulette-final-score strong {
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: 35px;
+  font-weight: 800;
+  line-height: 1;
+}
+.roulette-final-score span {
+  color: #EDE6FF;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+}
+.roulette-final-plan {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.roulette-final-plan li {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: 38px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 2.5px solid #745FA5;
+  border-radius: 19px;
+  background: rgba(23,17,47,.94);
+  box-shadow: 0 4px 0 rgba(0,0,0,.28);
+  text-align: left;
+}
+.roulette-final-plan li:nth-child(1) { border-color: #FF62B0; }
+.roulette-final-plan li:nth-child(2) { border-color: #55E7FF; }
+.roulette-final-plan li:nth-child(3) { border-color: #FFD166; }
+.roulette-final-plan li > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 13px;
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+}
+.roulette-final-plan li > div { display: flex; min-width: 0; flex-direction: column; }
+.roulette-final-plan small { color: #AFA4CD; font-size: 9px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.roulette-final-plan strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #F9F6FF;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.roulette-final-plan i { color: #FFD166; font-size: 19px; font-style: normal; text-align: center; }
+.roulette-victory .btn-candy:not(.btn-mint) {
+  border-color: #806AB2;
+  background: #1B1534;
+  color: #F9F6FF;
+  box-shadow: 0 5px 0 rgba(0,0,0,.34);
+}
+.roulette-victory .btn-mint {
+  box-shadow: 0 5px 0 rgba(0,0,0,.34), 0 0 16px rgba(69,240,193,.18);
+}
+@keyframes roulette-spin {
+  0% { transform: rotate(0deg) scale(.78); }
+  72% { transform: rotate(1120deg) scale(1.04); }
+  100% { transform: rotate(1080deg) scale(1); }
+}
+@keyframes roulette-wait { to { transform: rotate(360deg); } }
+
+@media (max-width: 365px) {
+  .roulette-choice { min-height: 72px; padding-right: 7px; padding-left: 32px; font-size: 13.5px; }
+  .roulette-choice-orbit { width: 23px; height: 23px; }
+  .roulette-steps li { font-size: 9px; }
+  .roulette-player-card { min-height: 122px; padding-right: 6px; padding-left: 6px; }
+}
+
 /* ---- titresim ayari: mini candy toggle ---- */
 .toggle-candy {
   position: relative;

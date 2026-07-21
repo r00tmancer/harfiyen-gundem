@@ -1,0 +1,77 @@
+[
+  {
+    "category": "yemek",
+    "prompt": "Bu akşam ne yiyelim?",
+    "choices": ["Pizza", "Sushi", "Mantı", "Burger", "Makarna", "Taco"]
+  },
+  {
+    "category": "yemek",
+    "prompt": "Randevu yemeğini seç",
+    "choices": ["Kebap", "Ramen", "Lahmacun", "Risotto", "Köri", "Fajita"]
+  },
+  {
+    "category": "yemek",
+    "prompt": "Paylaşmalık favori hangisi?",
+    "choices": ["Meze tabağı", "Nachos", "Karışık pizza", "Çıtır tavuk", "Pide", "Noodle"]
+  },
+  {
+    "category": "yemek",
+    "prompt": "Gece menüsünün yıldızı?",
+    "choices": ["Tost", "Kumpir", "Döner", "Sokak burgeri", "Çiğ köfte", "Gözleme"]
+  },
+  {
+    "category": "yemek",
+    "prompt": "Birlikte ne pişirelim?",
+    "choices": ["Ev pizzası", "Mantı", "Taco", "Kremalı makarna", "Sushi roll", "Köfte"]
+  },
+  {
+    "category": "etkinlik",
+    "prompt": "Yemekten sonra nereye?",
+    "choices": ["Sahilde yürüyüş", "Sinema", "Bowling", "Canlı müzik", "Oyun salonu", "Kahve turu"]
+  },
+  {
+    "category": "etkinlik",
+    "prompt": "Bu gece ne yapalım?",
+    "choices": ["Evde film", "Gece pikniği", "Karaoke", "Müze gezisi", "Quiz gecesi", "Dans"]
+  },
+  {
+    "category": "etkinlik",
+    "prompt": "Mini macerayı seç",
+    "choices": ["Bisiklet turu", "Gün batımı", "Fotoğraf avı", "Vapur turu", "Kitapçı gezisi", "Sürpriz rota"]
+  },
+  {
+    "category": "etkinlik",
+    "prompt": "Eğlence planımız hangisi?",
+    "choices": ["Masa oyunu", "Stand-up", "Konser", "Seramik atölyesi", "Paten", "Kaçış odası"]
+  },
+  {
+    "category": "etkinlik",
+    "prompt": "Challenge gecesinde ne var?",
+    "choices": ["Kör tadım", "Dans düellosu", "Retro oyun", "Çift testi", "Fotoğraf yarışı", "Uzay mutfağı challenge'ı"]
+  },
+  {
+    "category": "tatli",
+    "prompt": "Finalde hangi tatlı?",
+    "choices": ["Cheesecake", "Profiterol", "Baklava", "Dondurma", "Tiramisu", "Brownie"]
+  },
+  {
+    "category": "tatli",
+    "prompt": "Paylaşmalık tatlıyı seç",
+    "choices": ["Sufle", "San Sebastian", "Waffle", "Magnolia", "Trileçe", "Künefe"]
+  },
+  {
+    "category": "tatli",
+    "prompt": "Gece tatlısı hangisi?",
+    "choices": ["Cookie", "Dondurmalı irmik", "Çikolatalı pasta", "Kazandibi", "Donut", "Meyve tabağı"]
+  },
+  {
+    "category": "tatli",
+    "prompt": "Tatlı durağımızı belirle",
+    "choices": ["Dondurmacı", "Pastane", "Wafflecı", "Baklavacı", "Çikolatacı", "Kahveci"]
+  },
+  {
+    "category": "tatli",
+    "prompt": "İki kaşıklık mutluluk?",
+    "choices": ["Çilekli pasta", "Çikolatalı mus", "Fırın sütlaç", "Limonlu tart", "Muzlu kup", "Affogato"]
+  }
+]

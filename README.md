@@ -6,7 +6,8 @@
 
 ## Oyunlar
 
-- **Beni Yakala — yeni:** Önce kendi tercihini gizlice seç, sonra sevgilinin cevabını tahmin et. Beş turun sonunda kalp okuma skorunu Story görseli olarak paylaş.
+- **Randevu Ruleti — yeni:** Yemek, etkinlik ve tatlıyı gizlice seçin. Aynı seçim doğrudan plana girer; farklı seçimlerde güvenli rulet karar verir. Ortaya çıkan üç parçalı randevuyu Story görseli olarak paylaşın.
+- **Beni Yakala:** Önce kendi tercihini gizlice seç, sonra sevgilinin cevabını tahmin et. Beş turun sonunda kalp okuma skorunu Story görseli olarak paylaş.
 - **Kör Sıralama:** Beş sürpriz seçenek tek tek gelir. Geleceği bilmeden 1–5 arasına kilitleyin; listeler açılınca uyum yüzdesini Story görseli olarak paylaşın.
 - **Telepati:** Aynı sorulara gizlice cevap verip ortak uyumu ölçün.
 - **Harf Yarışı, Sayı Avı, Kelime Zinciri, En Uzun Kelime ve Bom:** Rekabetçi kısa oyunlar.

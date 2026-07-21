@@ -24,7 +24,8 @@ export type GameMode =
   | 'bom'
   | 'telepati'
   | 'kor_siralama'
-  | 'beni_yakala';
+  | 'beni_yakala'
+  | 'randevu_ruleti';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -43,6 +44,12 @@ export const BENI_YAKALA_OPTION_COUNT = 4;
 export const BENI_YAKALA_ANSWER_MS = 10_000;
 export const BENI_YAKALA_PREDICT_MS = 10_000;
 export const BENI_YAKALA_REVEAL_MS = 3_200;
+
+// Randevu Ruleti — uc kategoride gizli secimler ortak plana donusur
+export const RANDEVU_RULETI_ROUNDS = 3;
+export const RANDEVU_RULETI_CHOICE_COUNT = 6;
+export const RANDEVU_RULETI_PICK_MS = 12_000;
+export const RANDEVU_RULETI_REVEAL_MS = 3_200;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -91,6 +98,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   telepati: 'cifte_kalp', // bu soru eşleşirse 2 puan sayılır
   kor_siralama: 'pas', // mevcut karti sona atar; siradaki kart bilinmez
   beni_yakala: null, // bu modda joker yok
+  randevu_ruleti: null, // bu modda joker yok
 };
 
 export const TR_LETTERS = [
@@ -141,6 +149,8 @@ export type Phase =
   | 'beni_yakala_answer' // (beni yakala) herkes kendi tercihini gizlice kilitliyor
   | 'beni_yakala_predict' // (beni yakala) herkes partnerinin tercihini tahmin ediyor
   | 'beni_yakala_reveal' // (beni yakala) cevaplar ve tahminler aciliyor
+  | 'randevu_secim' // (randevu ruleti) iki oyuncu gizli secimini kilitliyor
+  | 'randevu_reveal' // (randevu ruleti) secimler ve ortak sonuc aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -237,6 +247,45 @@ export interface BeniYakalaState {
   reveal: BeniYakalaReveal | null;
 }
 
+export type RandevuCategory = 'yemek' | 'etkinlik' | 'tatli';
+export type RandevuResolution = 'match' | 'roulette' | 'single' | 'fallback';
+
+export interface RandevuRuletiRound {
+  category: RandevuCategory;
+  prompt: string;
+  choices: [string, string, string, string, string, string];
+}
+
+export interface RandevuRuletiReveal {
+  round: number;
+  category: RandevuCategory;
+  choices: Record<string, number | null>; // pid -> gizli secim; timeout = null
+  same: boolean; // iki oyuncu da ayni secimi kilitledi mi
+  selectedChoice: number; // plana giren 0..5 secenek
+  selectedLabel: string;
+  resolution: RandevuResolution;
+}
+
+export interface RandevuPlanItem {
+  category: RandevuCategory;
+  choice: number;
+  label: string;
+}
+
+export interface RandevuRuletiState {
+  round: number; // 1..RANDEVU_RULETI_ROUNDS
+  category: RandevuCategory;
+  prompt: string;
+  choices: [string, string, string, string, string, string];
+  myLocked: boolean;
+  opponentLocked: boolean;
+  myChoice: number | null; // yalniz alicinin kendi secimi
+  matches: number; // ayni secimin kilitlendigi tur sayisi
+  plan: RandevuPlanItem[]; // tamamlanan turlarin ortak randevu plani
+  history: RandevuRuletiReveal[]; // yalniz tamamlanip acilmis turlar
+  reveal: RandevuRuletiReveal | null; // aktif tur yalniz reveal/match_end fazinda acilir
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -268,6 +317,7 @@ export interface RoomSnapshot {
   telepati: TelepatiState | null;
   korSiralama: KorSiralamaState | null;
   beniYakala: BeniYakalaState | null;
+  randevuRuleti: RandevuRuletiState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -284,6 +334,7 @@ export type ClientMsg =
   | { t: 'kor_pass'; itemIndex: number; item: string } // (kor siralama) gorulen karti sona at
   | { t: 'beni_yakala_answer'; choice: number; round: number } // choice 0..3; stale tur reddedilir
   | { t: 'beni_yakala_predict'; choice: number; round: number } // partner tahmini; stale tur reddedilir
+  | { t: 'randevu_ruleti_pick'; choice: number; round: number } // choice 0..5; stale tur reddedilir
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

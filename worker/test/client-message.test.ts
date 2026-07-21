@@ -13,6 +13,7 @@ describe('parseClientMessage — gecerli protokol', () => {
   const validMessages = [
     { t: 'ready' },
     { t: 'set_mode', mode: 'kor_siralama' },
+    { t: 'set_mode', mode: 'randevu_ruleti' },
     { t: 'pick_letter', letter: 'İ' },
     { t: 'submit_word', word: 'incir' },
     { t: 'pick_number', value: 1 },
@@ -25,6 +26,7 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'kor_pass', itemIndex: 5, item: 'Ay Peyniri' },
     { t: 'beni_yakala_answer', choice: 0, round: 1 },
     { t: 'beni_yakala_predict', choice: 3, round: 5 },
+    { t: 'randevu_ruleti_pick', choice: 5, round: 3 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -155,6 +157,24 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
       for (const value of invalid) {
         expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
       }
+    }
+  });
+
+  it('randevu ruleti secimini exact-key 0..5 / 1..3 araliginda dogrular', () => {
+    const invalid = [
+      { t: 'randevu_ruleti_pick', choice: -1, round: 1 },
+      { t: 'randevu_ruleti_pick', choice: 6, round: 1 },
+      { t: 'randevu_ruleti_pick', choice: 1.5, round: 1 },
+      { t: 'randevu_ruleti_pick', choice: '1', round: 1 },
+      { t: 'randevu_ruleti_pick', choice: 0, round: 0 },
+      { t: 'randevu_ruleti_pick', choice: 0, round: 4 },
+      { t: 'randevu_ruleti_pick', choice: 0, round: 1.5 },
+      { t: 'randevu_ruleti_pick', choice: 0, round: '1' },
+      { t: 'randevu_ruleti_pick', choice: 0 },
+      { t: 'randevu_ruleti_pick', choice: 0, round: 1, admin: true },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
     }
   });
 
