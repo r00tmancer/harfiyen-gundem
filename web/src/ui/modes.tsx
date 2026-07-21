@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconLikely, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo, IconTruthLie } from './icons';
+import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconLikely, IconRanking, IconRoulette, IconRuler, IconSameWord, IconTarget, IconTilesDuo, IconTruthLie } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['iki_dogru_bir_yalan', 'kim_daha_muhtemel', 'kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['ayni_anda_soyle', 'iki_dogru_bir_yalan', 'kim_daha_muhtemel', 'kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -15,6 +15,13 @@ export interface ModeMeta {
 }
 
 export const MODE_META: Record<GameMode, ModeMeta> = {
+  ayni_anda_soyle: {
+    name: 'Aynı Anda Söyle',
+    desc: 'Beş kısa kategoride cevabınızı aynı anda yazın; ortak kelimeleri yakalayın.',
+    joker: '5 tur · Tek kısa cevap · Birlikte açılır',
+    badge: 'YENİ · 1–2 DK',
+    Icon: IconSameWord,
+  },
   iki_dogru_bir_yalan: {
     name: 'İki Doğru Bir Yalan',
     desc: 'Üç kısa iddia yazın; partneriniz gizli yalanı yakalasın.',

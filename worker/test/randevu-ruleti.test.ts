@@ -90,6 +90,7 @@ function stateForGame(phase: RoomState['phase'] = 'randevu_secim'): RoomState {
     kirmiziYesil: null,
     kimDahaMuhtemel: null,
     ikiDogruBirYalan: null,
+    ayniAndaSoyle: null,
   };
 }
 

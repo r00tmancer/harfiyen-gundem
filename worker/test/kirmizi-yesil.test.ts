@@ -89,6 +89,7 @@ function stateForGame(phase: RoomState['phase'] = 'kirmizi_yesil_vote'): RoomSta
     },
     kimDahaMuhtemel: null,
     ikiDogruBirYalan: null,
+    ayniAndaSoyle: null,
   };
 }
 

@@ -114,6 +114,7 @@ function stateForGame(phase: RoomState['phase'] = 'emoji_sifre_encode'): RoomSta
     kirmiziYesil: null,
     kimDahaMuhtemel: null,
     ikiDogruBirYalan: null,
+    ayniAndaSoyle: null,
   };
 }
 

@@ -72,6 +72,7 @@ function stateForRank(): RoomState {
     kirmiziYesil: null,
     kimDahaMuhtemel: null,
     ikiDogruBirYalan: null,
+    ayniAndaSoyle: null,
   };
 }
 

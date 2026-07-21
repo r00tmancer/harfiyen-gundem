@@ -2,6 +2,8 @@
 // Sunucu tarafi durum, snapshot'tan AYRIDIR: gizli bilgiler (sayi sirlari) burada tutulur,
 // snapshot'a asla sizmaz (round_end aralik-daraltma acilimi haric).
 import type {
+  AyniAndaSoylePrompt,
+  AyniAndaSoyleReveal,
   BeniYakalaQuestion,
   BeniYakalaReveal,
   EmojiSifreCode,
@@ -192,6 +194,20 @@ export interface IkiDogruBirYalanServer {
   reveal: IkiDogruBirYalanReveal | null;
 }
 
+// Ayni Anda Soyle: aktif cevaplar yalniz sunucuda tutulur. Reveal bir sonraki
+// tura gecildiginde silinir; ham cevap gecmisi hic biriktirilmez.
+export interface AyniAndaSoyleServer {
+  prompts: AyniAndaSoylePrompt[]; // maca ozel Web Crypto ile secilen bes prompt
+  roundIndex: number; // 0 tabanli
+  answers: Record<string, string>; // pid -> kanonik display cevabi
+  matches: number;
+  jointRounds: number;
+  differentRounds: number;
+  missedRounds: number;
+  matchRate: number | null;
+  reveal: AyniAndaSoyleReveal | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -228,6 +244,7 @@ export interface RoomState {
   kirmiziYesil: KirmiziYesilServer | null;
   kimDahaMuhtemel: KimDahaMuhtemelServer | null;
   ikiDogruBirYalan: IkiDogruBirYalanServer | null;
+  ayniAndaSoyle: AyniAndaSoyleServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

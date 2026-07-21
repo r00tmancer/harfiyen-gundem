@@ -1,23 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KIM_DAHA_MUHTEMEL_ROUNDS, KIRMIZI_YESIL_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import { AYNI_ANDA_SOYLE_ROUNDS, BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KIM_DAHA_MUHTEMEL_ROUNDS, KIRMIZI_YESIL_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
 import type { PlayerPublic, RandevuCategory, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconShare, IconTruthLie } from '../ui/icons';
+import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconSameWord, IconShare, IconTruthLie } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
 import { heartRain, paletteFor, rain } from '../fx/confetti';
 import { haptics } from '../fx/haptics';
 import { up } from '../hooks';
-import { createKorShareCard } from '../share/korSiralamaCard';
-import { createBeniYakalaShareCard } from '../share/beniYakalaCard';
-import { createRandevuRuletiShareCard } from '../share/randevuRuletiCard';
-import { createEmojiSifreShareCard } from '../share/emojiSifreCard';
-import { createKirmiziYesilShareCard } from '../share/kirmiziYesilCard';
-import { createKimDahaMuhtemelShareCard } from '../share/kimDahaMuhtemelCard';
-import { createIkiDogruBirYalanShareCard } from '../share/ikiDogruBirYalanCard';
 import { clearIkiDogruBirYalanDraft } from '../drafts/ikiDogruBirYalanDraft';
 import { PUBLIC_URL } from '../config';
 
@@ -124,6 +117,10 @@ function isKoopIkiDogruBirYalan(snap: RoomSnapshot): boolean {
   return snap.mode === 'iki_dogru_bir_yalan' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopAyniAndaSoyle(snap: RoomSnapshot): boolean {
+  return snap.mode === 'ayni_anda_soyle' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -168,6 +165,29 @@ function ikiDogruBirYalanPct(snap: RoomSnapshot): number {
   if (!game) return 0;
   return game.catchRate
     ?? (game.attemptedCount === 0 ? 0 : Math.round((game.caughtCount / game.attemptedCount) * 100));
+}
+
+function ayniAndaSoylePct(snap: RoomSnapshot): number {
+  const game = snap.ayniAndaSoyle;
+  if (!game) return 0;
+  return game.matchRate
+    ?? (game.jointRounds === 0 ? 0 : Math.round((game.matches / game.jointRounds) * 100));
+}
+
+function ayniAndaSoyleResult(jointRounds: number, matchRate: number): { title: string; subtitle: string } {
+  if (jointRounds < 3) {
+    return { title: 'Tur yarım kaldı', subtitle: 'Sağlam bir frekans özeti için en az üç ortak cevap gerekiyordu.' };
+  }
+  if (matchRate >= 80) {
+    return { title: 'Tek zihin, iki telefon', subtitle: 'Cevaplarınız neredeyse her kategoride aynı yere indi.' };
+  }
+  if (matchRate >= 60) {
+    return { title: 'Aynı frekanstasınız', subtitle: 'Gecenin çoğunda aynı cevabı yakaladınız.' };
+  }
+  if (matchRate >= 40) {
+    return { title: 'Birkaç kelime uzakta', subtitle: 'Ortak cevaplar var; sürprizler de yerini koruyor.' };
+  }
+  return { title: 'İki ayrı evren', subtitle: 'Farklı cevaplar, konuşacak daha çok şey demek.' };
 }
 
 function ikiDogruBirYalanResult(
@@ -407,9 +427,14 @@ export default function Victory() {
       isKoopEmojiSifre(snapshot) ||
       isKoopKirmiziYesil(snapshot) ||
       isKoopKimDahaMuhtemel(snapshot) ||
-      isKoopIkiDogruBirYalan(snapshot)
+      isKoopIkiDogruBirYalan(snapshot) ||
+      isKoopAyniAndaSoyle(snapshot)
     ) {
       celebratedSeq = matchEndSeq;
+      if (isKoopAyniAndaSoyle(snapshot) && (snapshot.ayniAndaSoyle?.jointRounds ?? 0) < 3) {
+        if ((snapshot.ayniAndaSoyle?.jointRounds ?? 0) > 0) haptics.tick();
+        return;
+      }
       if (isKoopIkiDogruBirYalan(snapshot)) {
         const fullTruthLieResult = (
           (snapshot.ikiDogruBirYalan?.availableRounds ?? 0) >= 2
@@ -435,7 +460,9 @@ export default function Victory() {
                   ? kirmiziYesilPct(snapshot)
                   : isKoopKimDahaMuhtemel(snapshot)
                     ? kimDahaMuhtemelPct(snapshot)
-                    : ikiDogruBirYalanPct(snapshot);
+                    : isKoopIkiDogruBirYalan(snapshot)
+                      ? ikiDogruBirYalanPct(snapshot)
+                      : ayniAndaSoylePct(snapshot);
       const enoughFlagRounds = !isKoopKirmiziYesil(snapshot)
         || (snapshot.kirmiziYesil?.jointRounds ?? 0) >= 4;
       const enoughLikelyRounds = !isKoopKimDahaMuhtemel(snapshot)
@@ -445,7 +472,9 @@ export default function Victory() {
           (snapshot.ikiDogruBirYalan?.availableRounds ?? 0) >= 2
           && (snapshot.ikiDogruBirYalan?.attemptedCount ?? 0) >= 2
         );
-      if (pct >= 70 && enoughFlagRounds && enoughLikelyRounds && enoughTruthLieRounds) heartRain();
+      const enoughSameWordRounds = !isKoopAyniAndaSoyle(snapshot)
+        || (snapshot.ayniAndaSoyle?.jointRounds ?? 0) >= 3;
+      if (pct >= 70 && enoughFlagRounds && enoughLikelyRounds && enoughTruthLieRounds && enoughSameWordRounds) heartRain();
       return;
     }
     if (!winner) return;
@@ -478,6 +507,8 @@ export default function Victory() {
         ? `Kırmızı mı Yeşil mi? oyununda ${snapshot.kirmiziYesil?.matches ?? 0}/${KIRMIZI_YESIL_ROUNDS} aynı rengi seçtik! Siz de ilişki radarınızı açın: ${GAME_URL}`
       : isKoopKimDahaMuhtemel(snapshot)
         ? `Kim Daha Muhtemel? oyununda ${snapshot.kimDahaMuhtemel?.agreements ?? 0}/${KIM_DAHA_MUHTEMEL_ROUNDS} kez aynı hedefi gösterdik! Siz de deneyin: ${GAME_URL}`
+      : isKoopAyniAndaSoyle(snapshot)
+        ? `Aynı Anda Söyle'de ${snapshot.ayniAndaSoyle?.matches ?? 0}/${AYNI_ANDA_SOYLE_ROUNDS} ortak cevap yakaladık! Siz de deneyin: ${GAME_URL}`
       : isKoopIkiDogruBirYalan(snapshot)
         ? `İki Doğru Bir Yalan'da ${snapshot.ikiDogruBirYalan?.caughtCount ?? 0}/${snapshot.ikiDogruBirYalan?.availableRounds ?? 0} gizli yalanı yakaladık! Siz de deneyin: ${GAME_URL}`
       : iWon && opp
@@ -487,34 +518,39 @@ export default function Victory() {
   const kor = snapshot.korSiralama;
   const makeKorShareFile =
     isKoopKorSiralama(snapshot) && me && opp && kor?.finalRankings
-      ? () =>
-          createKorShareCard({
+      ? async () => {
+          const { createKorShareCard } = await import('../share/korSiralamaCard');
+          return createKorShareCard({
             topic: kor.topic,
             pct: kor.compatibility ?? 0,
             exactMatches: kor.exactMatches,
             url: GAME_URL,
             playerA: { name: me.nick, ranking: kor.finalRankings?.[me.id] ?? [] },
             playerB: { name: opp.nick, ranking: kor.finalRankings?.[opp.id] ?? [] },
-          })
+          });
+        }
       : undefined;
 
   const beni = snapshot.beniYakala;
   const makeBeniShareFile =
     isKoopBeniYakala(snapshot) && me && opp && beni
-      ? () =>
-          createBeniYakalaShareCard({
+      ? async () => {
+          const { createBeniYakalaShareCard } = await import('../share/beniYakalaCard');
+          return createBeniYakalaShareCard({
             myName: me.nick,
             partnerName: opp.nick,
             myReads: beni.reads[me.id] ?? 0,
             partnerReads: beni.reads[opp.id] ?? 0,
             url: GAME_URL,
-          })
+          });
+        }
       : undefined;
   const randevu = snapshot.randevuRuleti;
   const makeRandevuShareFile =
     isKoopRandevuRuleti(snapshot) && me && opp && randevu
-      ? () =>
-          createRandevuRuletiShareCard({
+      ? async () => {
+          const { createRandevuRuletiShareCard } = await import('../share/randevuRuletiCard');
+          return createRandevuRuletiShareCard({
             playerA: me.nick,
             playerB: opp.nick,
             exactMatches: randevu.matches,
@@ -523,13 +559,15 @@ export default function Victory() {
               choice: item.label,
             })),
             url: GAME_URL,
-          })
+          });
+        }
       : undefined;
   const emoji = snapshot.emojiSifre;
   const makeEmojiShareFile =
     isKoopEmojiSifre(snapshot) && me && opp && emoji
-      ? () =>
-          createEmojiSifreShareCard({
+      ? async () => {
+          const { createEmojiSifreShareCard } = await import('../share/emojiSifreCard');
+          return createEmojiSifreShareCard({
             playerA: me.nick,
             playerB: opp.nick,
             correct: emoji.correctCount,
@@ -544,7 +582,8 @@ export default function Victory() {
                   : 'miss',
             })),
             url: GAME_URL,
-          })
+          });
+        }
       : undefined;
   const flags = snapshot.kirmiziYesil;
   const featuredFlagPrompt = flags
@@ -554,8 +593,9 @@ export default function Victory() {
     : 'Bu davranış sende hangi rengi yakıyor?';
   const makeFlagsShareFile =
     isKoopKirmiziYesil(snapshot) && me && opp && flags
-      ? () =>
-          createKirmiziYesilShareCard({
+      ? async () => {
+          const { createKirmiziYesilShareCard } = await import('../share/kirmiziYesilCard');
+          return createKirmiziYesilShareCard({
             playerA: me.nick,
             playerB: opp.nick,
             matches: flags.matches,
@@ -569,7 +609,8 @@ export default function Victory() {
             // Yalniz tamamlanip acilmis history'den tek guvenli prompt aktarilir.
             featuredPrompt: featuredFlagPrompt,
             url: GAME_URL,
-          })
+          });
+        }
       : undefined;
   const likely = snapshot.kimDahaMuhtemel;
   const featuredLikelyPrompt = likely
@@ -580,8 +621,9 @@ export default function Victory() {
     : 'Sence hanginiz bunu yapmaya daha yatkın?';
   const makeLikelyShareFile =
     isKoopKimDahaMuhtemel(snapshot) && me && opp && likely
-      ? () =>
-          createKimDahaMuhtemelShareCard({
+      ? async () => {
+          const { createKimDahaMuhtemelShareCard } = await import('../share/kimDahaMuhtemelCard');
+          return createKimDahaMuhtemelShareCard({
             playerA: me.nick,
             playerB: opp.nick,
             agreements: likely.agreements,
@@ -594,13 +636,32 @@ export default function Victory() {
             // Yalnız açılmış ortak turdan soru aktarılır; hedefler Story API'sine giremez.
             featuredPrompt: featuredLikelyPrompt,
             url: GAME_URL,
-          })
+          });
+        }
+      : undefined;
+  const sameWord = snapshot.ayniAndaSoyle;
+  const makeSameWordShareFile =
+    isKoopAyniAndaSoyle(snapshot) && me && opp && sameWord && sameWord.jointRounds > 0
+      ? async () => {
+          const { createAyniAndaSoyleShareCard } = await import('../share/ayniAndaSoyleCard');
+          return createAyniAndaSoyleShareCard({
+            playerA: me.nick,
+            playerB: opp.nick,
+            matches: sameWord.matches,
+            jointRounds: sameWord.jointRounds,
+            splitRounds: sameWord.differentRounds,
+            missedRounds: sameWord.missedRounds,
+            compatibility: sameWord.matchRate ?? ayniAndaSoylePct(snapshot),
+            url: GAME_URL,
+          });
+        }
       : undefined;
   const truthLie = snapshot.ikiDogruBirYalan;
   const makeTruthLieShareFile =
     isKoopIkiDogruBirYalan(snapshot) && me && opp && truthLie && truthLie.availableRounds > 0
-      ? () =>
-          createIkiDogruBirYalanShareCard({
+      ? async () => {
+          const { createIkiDogruBirYalanShareCard } = await import('../share/ikiDogruBirYalanCard');
+          return createIkiDogruBirYalanShareCard({
             playerA: me.nick,
             playerB: opp.nick,
             caughtCount: truthLie.caughtCount,
@@ -610,9 +671,12 @@ export default function Victory() {
             availableRounds: truthLie.availableRounds,
             catchRate: truthLie.catchRate ?? ikiDogruBirYalanPct(snapshot),
             url: GAME_URL,
-          })
+          });
+        }
       : undefined;
-  const shareTitle = isKoopIkiDogruBirYalan(snapshot)
+  const shareTitle = isKoopAyniAndaSoyle(snapshot)
+    ? 'Aynı Anda Söyle Sonucu'
+    : isKoopIkiDogruBirYalan(snapshot)
     ? 'İki Doğru Bir Yalan Sonucu'
     : isKoopKimDahaMuhtemel(snapshot)
     ? 'Kim Daha Muhtemel? Sonucu'
@@ -657,11 +721,14 @@ export default function Victory() {
           {!connected ? 'Bağlanılıyor…' : mineWant ? `Rövanş istendi (${rematchWants.length}/2)` : 'Rövanş'}
         </button>
         {/* ikincil aksiyon: rovansin altinda */}
-        {!(isKoopIkiDogruBirYalan(snapshot) && (truthLie?.availableRounds ?? 0) === 0) && (
+        {!(
+          (isKoopIkiDogruBirYalan(snapshot) && (truthLie?.availableRounds ?? 0) === 0)
+          || (isKoopAyniAndaSoyle(snapshot) && (sameWord?.jointRounds ?? 0) === 0)
+        ) && (
           <ShareButton
             text={shareMsg}
             title={shareTitle}
-            makeFile={makeTruthLieShareFile ?? makeLikelyShareFile ?? makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
+            makeFile={makeSameWordShareFile ?? makeTruthLieShareFile ?? makeLikelyShareFile ?? makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
           />
         )}
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
@@ -778,6 +845,84 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op Ayni Anda Soyle: yalniz toplu metrik; ham cevaplar finalde yok ----
+  if (isKoopAyniAndaSoyle(snapshot)) {
+    const game = snapshot.ayniAndaSoyle;
+    const matches = game?.matches ?? 0;
+    const jointRounds = game?.jointRounds ?? 0;
+    const differentRounds = game?.differentRounds ?? 0;
+    const missedRounds = game?.missedRounds ?? 0;
+    const matchRate = ayniAndaSoylePct(snapshot);
+    const incomplete = jointRounds < 3;
+    const result = ayniAndaSoyleResult(jointRounds, matchRate);
+    return (
+      <div ref={root} className="same-word-shell same-word-victory flex w-full flex-col items-center gap-4 pt-5 pb-6 text-center">
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="same-word-final-icon" aria-hidden="true"><IconSameWord size={40} /></span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <div data-pop>
+          <p className="same-word-final-kicker">CEVAPLAR KAPANDI</p>
+          <div className="same-word-final-names">
+            {MODE_META.ayni_anda_soyle.name}
+            {opp ? ` · ${me?.nick ?? ''} + ${opp.nick}` : ''}
+          </div>
+        </div>
+
+        <div
+          data-pop
+          className="same-word-final-score"
+          role="status"
+          aria-label={incomplete
+            ? `${AYNI_ANDA_SOYLE_ROUNDS} turdan ${jointRounds} tanesi birlikte cevaplandı; tur yarım kaldı`
+            : `${AYNI_ANDA_SOYLE_ROUNDS} turdan ${matches} ortak cevap; yüzde ${matchRate} aynı frekans`}
+        >
+          <h1><strong>{matches}/{AYNI_ANDA_SOYLE_ROUNDS}</strong><span>ORTAK CEVAP</span></h1>
+          <small>{incomplete ? `${jointRounds}/${AYNI_ANDA_SOYLE_ROUNDS} ortak tur tamamlandı` : `%${matchRate} aynı frekans`}</small>
+        </div>
+
+        <div data-pop className="same-word-final-copy">
+          <h2>{result.title}</h2>
+          <p>{result.subtitle}</p>
+        </div>
+
+        <div data-pop className="same-word-final-stats" aria-label="Ortak cevap özeti">
+          <div className="same-word-final-stat match">
+            <strong>{matches}</strong>
+            <span>EŞLEŞTİ</span>
+          </div>
+          <div className="same-word-final-stat split">
+            <strong>{differentRounds}</strong>
+            <span>FARKLI</span>
+          </div>
+          <div className="same-word-final-stat missed">
+            <strong>{missedRounds}</strong>
+            <span>KAÇAN TUR</span>
+          </div>
+        </div>
+
+        <div data-pop className="same-word-final-summary">
+          <span>{jointRounds}/{AYNI_ANDA_SOYLE_ROUNDS} birlikte cevaplandı</span>
+          <span>{matches} eşleşme · {differentRounds} farklı</span>
+        </div>
+
+        <p data-pop className="same-word-story-privacy">
+          Story'de yalnız ortak skor paylaşılır; yazdığınız cevaplar gösterilmez.
         </p>
         {footer}
       </div>

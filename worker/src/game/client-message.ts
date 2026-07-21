@@ -1,4 +1,5 @@
 import {
+  AYNI_ANDA_SOYLE_ROUNDS,
   BENI_YAKALA_OPTION_COUNT,
   BENI_YAKALA_ROUNDS,
   EMOJI_SIFRE_CODE_COUNT,
@@ -16,6 +17,7 @@ import {
   SAYI_MIN,
   TR_LETTERS,
   normalizeIkiDogruBirYalanStatements,
+  normalizeAyniAndaSoyleAnswer,
   normalizeTr,
 } from '@harfiyen/shared';
 import type {
@@ -54,6 +56,7 @@ const GAME_MODES = {
   kirmizi_yesil: true,
   kim_daha_muhtemel: true,
   iki_dogru_bir_yalan: true,
+  ayni_anda_soyle: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -221,6 +224,14 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         isIntegerInRange(value.round, 1, 2)
         ? { t: 'iki_dogru_bir_yalan_guess', choice: value.choice, round: value.round }
         : null;
+
+    case 'ayni_anda_soyle_answer': {
+      if (!hasExactKeys(value, ['t', 'answer', 'round'])) return null;
+      const answer = normalizeAyniAndaSoyleAnswer(value.answer);
+      return answer && isIntegerInRange(value.round, 1, AYNI_ANDA_SOYLE_ROUNDS)
+        ? { t: 'ayni_anda_soyle_answer', answer, round: value.round }
+        : null;
+    }
 
     case 'use_joker':
       return hasExactKeys(value, ['t']) ? { t: 'use_joker' } : null;

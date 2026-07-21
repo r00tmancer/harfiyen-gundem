@@ -91,6 +91,7 @@ function stateForGame(phase: RoomState['phase'] = 'iki_dogru_bir_yalan_setup'): 
       history: [],
       reveal: null,
     },
+    ayniAndaSoyle: null,
   };
 }
 

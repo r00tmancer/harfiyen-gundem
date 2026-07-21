@@ -6,6 +6,7 @@
 
 ## Oyunlar
 
+- **Aynı Anda Söyle — yeni:** Beş kısa soruda cevaplarınızı aynı anda ve gizlice kilitleyin. Eşleşmeleri, farklı cevapları ve kaçan turları görün; yazdığınız cevapları göstermeyen ortak sonucu 9:16 Story görseli olarak paylaşın.
 - **İki Doğru Bir Yalan — yeni:** İkiniz de üç kısa iddia yazıp bir gizli yalan kilitleyin. Sırayla partnerinizin yalanını yakalayın; ham iddiaları göstermeyen ortak sonucu 9:16 Story görseli olarak paylaşın.
 - **Kim Daha Muhtemel?:** Sekiz eğlenceli rolde gizlice kendini, partnerini veya ikinizi işaretleyin. Seçimler birlikte açılsın; yalnız ortak toplamları ve açılmış bir soruyu içeren 9:16 Story görselini paylaşın.
 - **Kırmızı mı Yeşil mi? — yeni:** Sekiz gündelik senaryoya gizlice kırmızı, duruma bağlı veya yeşil renk verin. Cevaplar birlikte açılsın; ortak radarınızı bireysel oyları göstermeyen 9:16 Story görseli olarak paylaşın.

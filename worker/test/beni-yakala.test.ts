@@ -74,6 +74,7 @@ function gameState(phase: RoomState['phase'] = 'beni_yakala_answer'): RoomState 
     kirmiziYesil: null,
     kimDahaMuhtemel: null,
     ikiDogruBirYalan: null,
+    ayniAndaSoyle: null,
   };
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   BENI_YAKALA_ROUNDS,
+  AYNI_ANDA_SOYLE_ROUNDS,
   BOM_LIVES,
   EMOJI_SIFRE_ROUNDS,
   JOKER_FREEZE_MS,
@@ -20,7 +21,7 @@ import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, REJECT_TEXT, useStore } from '../store';
 import { send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconSnowflake, IconSwap, IconTruthLie } from '../ui/icons';
+import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconSameWord, IconSnowflake, IconSwap, IconTruthLie } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, Stars, TimerBar, WinWash } from '../ui/parts';
 import { useRemaining, up } from '../hooks';
@@ -39,8 +40,13 @@ import { EmojiSifreEncode, EmojiSifreGuess, EmojiSifreReveal } from './modes/Emo
 import { KirmiziYesilReveal, KirmiziYesilVote } from './modes/KirmiziYesilGame';
 import { KimDahaMuhtemelReveal, KimDahaMuhtemelVote } from './modes/KimDahaMuhtemelGame';
 import { IkiDogruBirYalanGuess, IkiDogruBirYalanReveal, IkiDogruBirYalanSetup } from './modes/IkiDogruBirYalanGame';
+import { AyniAndaSoyleAnswer, AyniAndaSoyleReveal } from './modes/AyniAndaSoyleGame';
 
 function progressLabel(snap: RoomSnapshot): string {
+  if (snap.mode === 'ayni_anda_soyle') {
+    if (snap.phase === 'countdown') return 'Başlıyor';
+    return `Cevap ${snap.round}/${AYNI_ANDA_SOYLE_ROUNDS}`;
+  }
   if (snap.mode === 'iki_dogru_bir_yalan') {
     if (snap.phase === 'iki_dogru_bir_yalan_setup') return 'Hazırlık';
     if (snap.phase === 'countdown') return 'Başlıyor';
@@ -117,6 +123,7 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
   const isFlags = snap.mode === 'kirmizi_yesil';
   const isLikely = snap.mode === 'kim_daha_muhtemel';
   const isTruthLie = snap.mode === 'iki_dogru_bir_yalan';
+  const isSameWord = snap.mode === 'ayni_anda_soyle';
   const matches = isRanking
     ? (snap.korSiralama?.exactMatches ?? 0)
     : isReading
@@ -131,6 +138,8 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
           ? (snap.kimDahaMuhtemel?.agreements ?? 0)
         : isTruthLie
           ? (snap.ikiDogruBirYalan?.caughtCount ?? 0)
+        : isSameWord
+          ? (snap.ayniAndaSoyle?.matches ?? 0)
       : (snap.telepati?.matches ?? 0);
   const countRef = useRef<HTMLSpanElement>(null);
   const prev = useRef(matches);
@@ -143,17 +152,17 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
 
   return (
     <div
-      className={`flex items-center justify-between gap-2 rounded-2xl border-[3px] px-3 py-2 ${isRoulette ? 'roulette-coop' : ''} ${isEmoji ? 'emoji-coop' : ''} ${isFlags ? 'flag-coop' : ''} ${isLikely ? 'likely-coop' : ''} ${isTruthLie ? 'truth-lie-coop' : ''}`}
+      className={`flex items-center justify-between gap-2 rounded-2xl border-[3px] px-3 py-2 ${isRoulette ? 'roulette-coop' : ''} ${isEmoji ? 'emoji-coop' : ''} ${isFlags ? 'flag-coop' : ''} ${isLikely ? 'likely-coop' : ''} ${isTruthLie ? 'truth-lie-coop' : ''} ${isSameWord ? 'same-word-coop' : ''}`}
       style={{
-        borderColor: isRoulette || isEmoji || isFlags || isLikely || isTruthLie ? '#8B6FD2' : 'var(--ink)',
-        background: isRoulette || isEmoji || isFlags || isLikely || isTruthLie ? '#15112B' : 'var(--p1-soft)',
-        boxShadow: isRoulette || isEmoji || isFlags || isLikely || isTruthLie ? '0 4px 0 rgba(168,117,255,.28)' : '0 4px 0 var(--shadow-ink)',
+        borderColor: isRoulette || isEmoji || isFlags || isLikely || isTruthLie || isSameWord ? '#8B6FD2' : 'var(--ink)',
+        background: isRoulette || isEmoji || isFlags || isLikely || isTruthLie || isSameWord ? '#15112B' : 'var(--p1-soft)',
+        boxShadow: isRoulette || isEmoji || isFlags || isLikely || isTruthLie || isSameWord ? '0 4px 0 rgba(168,117,255,.28)' : '0 4px 0 var(--shadow-ink)',
       }}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={38} />}
         <span className="inline-flex shrink-0" style={{ color: 'var(--p1)' }} aria-hidden="true">
-          {isRanking ? <IconRanking size={20} /> : isRoulette ? <IconRoulette size={20} /> : isEmoji ? <IconEmojiCode size={20} /> : isFlags ? <IconFlagRadar size={20} /> : isLikely ? <IconLikely size={20} /> : isTruthLie ? <IconTruthLie size={20} /> : <IconHeartSolid size={20} />}
+          {isRanking ? <IconRanking size={20} /> : isRoulette ? <IconRoulette size={20} /> : isEmoji ? <IconEmojiCode size={20} /> : isFlags ? <IconFlagRadar size={20} /> : isLikely ? <IconLikely size={20} /> : isTruthLie ? <IconTruthLie size={20} /> : isSameWord ? <IconSameWord size={20} /> : <IconHeartSolid size={20} />}
         </span>
         {opp && (
           <Avatar
@@ -181,10 +190,12 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
           <IconLikely size={15} style={{ color: '#FFD166' }} />
         ) : isTruthLie ? (
           <IconTruthLie size={15} style={{ color: '#58E8FF' }} />
+        ) : isSameWord ? (
+          <IconSameWord size={15} style={{ color: '#FFD166' }} />
         ) : (
           <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />
         )}
-        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : isRoulette ? 'aynı seçim' : isEmoji ? 'ortak şifre' : isFlags ? 'aynı renk' : isLikely ? 'aynı hedef' : isTruthLie ? 'yalan yakalandı' : 'uyum'}
+        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : isRoulette ? 'aynı seçim' : isEmoji ? 'ortak şifre' : isFlags ? 'aynı renk' : isLikely ? 'aynı hedef' : isTruthLie ? 'yalan yakalandı' : isSameWord ? 'ortak cevap' : 'uyum'}
       </span>
     </div>
   );
@@ -702,7 +713,7 @@ export default function Game() {
   const mode = snapshot.mode;
 
   return (
-    <div ref={rootRef} className={`flex w-full flex-col gap-4 pt-3 pb-6 ${mode === 'randevu_ruleti' ? 'roulette-shell' : ''} ${mode === 'emoji_sifre' ? 'emoji-shell' : ''} ${mode === 'kirmizi_yesil' ? 'flag-shell' : ''} ${mode === 'kim_daha_muhtemel' ? 'likely-shell' : ''} ${mode === 'iki_dogru_bir_yalan' ? 'truth-lie-shell' : ''}`}>
+    <div ref={rootRef} className={`flex w-full flex-col gap-4 pt-3 pb-6 ${mode === 'randevu_ruleti' ? 'roulette-shell' : ''} ${mode === 'emoji_sifre' ? 'emoji-shell' : ''} ${mode === 'kirmizi_yesil' ? 'flag-shell' : ''} ${mode === 'kim_daha_muhtemel' ? 'likely-shell' : ''} ${mode === 'iki_dogru_bir_yalan' ? 'truth-lie-shell' : ''} ${mode === 'ayni_anda_soyle' ? 'same-word-shell' : ''}`}>
       {boomFx && (
         <div key={boomFx.key} aria-hidden="true">
           <div className="boom-flash" />
@@ -710,7 +721,7 @@ export default function Game() {
         </div>
       )}
       {/* ko-op modlar: vs yerine yan yana avatarlar + ortak ilerleme */}
-      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' || mode === 'randevu_ruleti' || mode === 'emoji_sifre' || mode === 'kirmizi_yesil' || mode === 'kim_daha_muhtemel' || mode === 'iki_dogru_bir_yalan' ? (
+      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' || mode === 'randevu_ruleti' || mode === 'emoji_sifre' || mode === 'kirmizi_yesil' || mode === 'kim_daha_muhtemel' || mode === 'iki_dogru_bir_yalan' || mode === 'ayni_anda_soyle' ? (
         <CoopScoreBar snap={snapshot} />
       ) : (
         <ScoreBar snap={snapshot} />
@@ -750,6 +761,8 @@ export default function Game() {
       {snapshot.phase === 'iki_dogru_bir_yalan_setup' && <IkiDogruBirYalanSetup snap={snapshot} />}
       {snapshot.phase === 'iki_dogru_bir_yalan_guess' && <IkiDogruBirYalanGuess snap={snapshot} />}
       {snapshot.phase === 'iki_dogru_bir_yalan_reveal' && <IkiDogruBirYalanReveal snap={snapshot} />}
+      {snapshot.phase === 'ayni_anda_soyle_answer' && <AyniAndaSoyleAnswer snap={snapshot} />}
+      {snapshot.phase === 'ayni_anda_soyle_reveal' && <AyniAndaSoyleReveal snap={snapshot} />}
       {snapshot.phase === 'round_end' &&
         (mode === 'sayi' ? (
           <SayiRoundEnd snap={snapshot} />

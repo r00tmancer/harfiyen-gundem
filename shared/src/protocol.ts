@@ -29,7 +29,8 @@ export type GameMode =
   | 'emoji_sifre'
   | 'kirmizi_yesil'
   | 'kim_daha_muhtemel'
-  | 'iki_dogru_bir_yalan';
+  | 'iki_dogru_bir_yalan'
+  | 'ayni_anda_soyle';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -85,6 +86,12 @@ export const IKI_DOGRU_BIR_YALAN_SETUP_MS = 60_000;
 export const IKI_DOGRU_BIR_YALAN_GUESS_MS = 18_000;
 export const IKI_DOGRU_BIR_YALAN_REVEAL_MS = 4_200;
 
+// Ayni Anda Soyle — bes kisa kategoride gizli cevaplar birlikte acilir
+export const AYNI_ANDA_SOYLE_ROUNDS = 5;
+export const AYNI_ANDA_SOYLE_ANSWER_MS = 12_000;
+export const AYNI_ANDA_SOYLE_REVEAL_MS = 3_200;
+export const AYNI_ANDA_SOYLE_MAX_ANSWER_LENGTH = 32;
+
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
 export const REACTION_THROTTLE_MS = 3_000;
@@ -137,6 +144,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   kirmizi_yesil: null, // bu hizli uyum testinde joker yok
   kim_daha_muhtemel: null, // bu hizli cift oyununda joker yok
   iki_dogru_bir_yalan: null, // bu kisa tanişma oyununda joker yok
+  ayni_anda_soyle: null, // bu kisa ortak cevap oyununda joker yok
 };
 
 export const TR_LETTERS = [
@@ -199,6 +207,8 @@ export type Phase =
   | 'iki_dogru_bir_yalan_setup' // iki oyuncu kendi uc iddiasini ayni anda hazirliyor
   | 'iki_dogru_bir_yalan_guess' // aktif tahminci partnerinin yalanini seciyor
   | 'iki_dogru_bir_yalan_reveal' // aktif paketin yalani ve tahmini aciliyor
+  | 'ayni_anda_soyle_answer' // iki oyuncu kisa cevabini gizlice kilitliyor
+  | 'ayni_anda_soyle_reveal' // iki cevap ayni anda aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -507,7 +517,52 @@ export interface IkiDogruBirYalanState {
   reveal: IkiDogruBirYalanReveal | null;
 }
 
-function hasIkiDogruBirYalanForbiddenControl(value: string): boolean {
+export type AyniAndaSoyleCategory =
+  | 'yemek'
+  | 'icecek'
+  | 'tatli'
+  | 'sehir'
+  | 'film_dizi'
+  | 'hayvan'
+  | 'renk'
+  | 'tatil'
+  | 'sarki'
+  | 'super_guc'
+  | 'aktivite'
+  | 'gece_atistirmasi';
+
+export interface AyniAndaSoylePrompt {
+  category: AyniAndaSoyleCategory;
+  prompt: string;
+}
+
+export type AyniAndaSoyleResolution = 'match' | 'different' | 'solo' | 'skipped';
+
+export interface AyniAndaSoyleReveal {
+  round: number;
+  category: AyniAndaSoyleCategory;
+  prompt: string;
+  answers: Record<string, string | null>;
+  match: boolean;
+  resolution: AyniAndaSoyleResolution;
+}
+
+export interface AyniAndaSoyleState {
+  round: number; // 1..AYNI_ANDA_SOYLE_ROUNDS
+  category: AyniAndaSoyleCategory | null; // match_end'de aggregate-only: null
+  prompt: string | null; // match_end'de aggregate-only: null
+  myLocked: boolean;
+  opponentLocked: boolean;
+  myAnswer: string | null; // answer fazinda yalniz alicinin kendi cevabi
+  matches: number;
+  jointRounds: number;
+  differentRounds: number;
+  missedRounds: number;
+  matchRate: number | null; // jointRounds 0 ise null
+  reveal: AyniAndaSoyleReveal | null; // ham cevaplar yalniz aktif reveal'da
+}
+
+function hasForbiddenUserTextControl(value: string): boolean {
   for (const character of value) {
     const code = character.codePointAt(0) ?? 0;
     if (
@@ -557,18 +612,57 @@ export function normalizeIkiDogruBirYalanStatements(
   if (!Array.isArray(value) || value.length !== IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT) return null;
   const normalized: string[] = [];
   for (const entry of value) {
-    if (typeof entry !== 'string' || hasIkiDogruBirYalanForbiddenControl(entry)) return null;
+    if (typeof entry !== 'string' || hasForbiddenUserTextControl(entry)) return null;
     const clean = entry.normalize('NFKC').trim().replace(/\s+/gu, ' ');
     if (
       !clean ||
       [...clean].length > IKI_DOGRU_BIR_YALAN_MAX_STATEMENT_LENGTH ||
-      hasIkiDogruBirYalanForbiddenControl(clean)
+      hasForbiddenUserTextControl(clean)
     ) return null;
     normalized.push(clean);
   }
   const unique = new Set(normalized.map(ikiDogruBirYalanDuplicateKey));
   if (unique.size !== IKI_DOGRU_BIR_YALAN_STATEMENT_COUNT) return null;
   return [normalized[0], normalized[1], normalized[2]];
+}
+
+// Emoji birlestiricileri display'de korunur; karsilastirma anahtarinda ise
+// gorunurde ayni cevabi farkli gostermelerine izin verilmez. Bosluk ve noktalama
+// toleransi "pizza!" ile "PİZZA" gibi niyet olarak ayni cevaplari eslestirir.
+export function ayniAndaSoyleAnswerKey(value: string): string {
+  let comparable = '';
+  for (const character of value.normalize('NFKC')) {
+    const code = character.codePointAt(0) ?? 0;
+    if (
+      code === 0x200c ||
+      code === 0x200d ||
+      (code >= 0xfe00 && code <= 0xfe0f) ||
+      (code >= 0xe0100 && code <= 0xe01ef)
+    ) continue;
+    comparable += character;
+  }
+  return comparable
+    .toLocaleLowerCase('tr-TR')
+    .replace(/â/g, 'a')
+    .replace(/î/g, 'i')
+    .replace(/û/g, 'u')
+    .replace(/[\p{P}\p{Z}]/gu, '');
+}
+
+// Tek bir kisa cevap icin ortak istemci/sunucu kanoniklestirmesi. Kontrol ve
+// gorunmez karakterler normalize edilmeden once reddedilir; ZWJ/ZWNJ ile emoji
+// variation selector'lari display icin kalabilir, fakat key'de fark yaratmaz.
+export function normalizeAyniAndaSoyleAnswer(value: unknown): string | null {
+  if (typeof value !== 'string' || hasForbiddenUserTextControl(value)) return null;
+  const clean = value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+  const key = ayniAndaSoyleAnswerKey(clean);
+  if (
+    !clean ||
+    [...clean].length > AYNI_ANDA_SOYLE_MAX_ANSWER_LENGTH ||
+    hasForbiddenUserTextControl(clean) ||
+    !/[\p{L}\p{N}\p{S}]/u.test(key)
+  ) return null;
+  return clean;
 }
 
 export interface PlayerPublic {
@@ -607,6 +701,7 @@ export interface RoomSnapshot {
   kirmiziYesil: KirmiziYesilState | null;
   kimDahaMuhtemel: KimDahaMuhtemelState | null;
   ikiDogruBirYalan: IkiDogruBirYalanState | null;
+  ayniAndaSoyle: AyniAndaSoyleState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -630,6 +725,7 @@ export type ClientMsg =
   | { t: 'kim_daha_muhtemel_vote'; choice: KimDahaMuhtemelChoice; round: number } // stale tur ve tekrar oy reddedilir
   | { t: 'iki_dogru_bir_yalan_pack'; statements: IkiDogruBirYalanStatements; lieIndex: number }
   | { t: 'iki_dogru_bir_yalan_guess'; choice: number; round: number }
+  | { t: 'ayni_anda_soyle_answer'; answer: string; round: number }
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

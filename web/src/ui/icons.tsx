@@ -290,6 +290,18 @@ export function IconTruthLie({ size = 22, ...props }: { size?: number } & SVGPro
   );
 }
 
+// ayni anda soylenen iki cevabin ortada bulusmasi
+export function IconSameWord({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <path d="M2.2 5.2h8.6a2.8 2.8 0 0 1 2.8 2.8v3.4a2.8 2.8 0 0 1-2.8 2.8H7.2l-3.4 2.6.7-2.6H4A1.8 1.8 0 0 1 2.2 12.4z" fill="currentColor" fillOpacity={0.11} />
+      <path d="M21.8 7.2h-6.2a2.5 2.5 0 0 0-2.5 2.5v3a2.5 2.5 0 0 0 2.5 2.5h1.6l3 2.3-.6-2.3h.4a1.8 1.8 0 0 0 1.8-1.8z" fill="currentColor" fillOpacity={0.18} />
+      <path d="M6.1 8.9h3.4M15.8 10.9h2.2" strokeWidth={1.8} />
+      <path d="M10.2 18.7l1.8-1.8 1.8 1.8M12 16.9v4" strokeWidth={1.8} />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

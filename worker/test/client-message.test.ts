@@ -18,6 +18,7 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'set_mode', mode: 'kirmizi_yesil' },
     { t: 'set_mode', mode: 'kim_daha_muhtemel' },
     { t: 'set_mode', mode: 'iki_dogru_bir_yalan' },
+    { t: 'set_mode', mode: 'ayni_anda_soyle' },
     { t: 'pick_letter', letter: 'İ' },
     { t: 'submit_word', word: 'incir' },
     { t: 'pick_number', value: 1 },
@@ -48,6 +49,8 @@ describe('parseClientMessage — gecerli protokol', () => {
     },
     { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 1 },
     { t: 'iki_dogru_bir_yalan_guess', choice: 2, round: 2 },
+    { t: 'ayni_anda_soyle_answer', answer: 'Pizza', round: 1 },
+    { t: 'ayni_anda_soyle_answer', answer: '👨‍👩‍👧', round: 5 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -341,6 +344,56 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
       { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: '1' },
       { t: 'iki_dogru_bir_yalan_guess', choice: 0 },
       { t: 'iki_dogru_bir_yalan_guess', choice: 0, round: 1, pid: 'p2' },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('ayni anda soyle cevabini NFKC, trim ve Unicode bosluk collapse ile kanoniklestirir', () => {
+    expect(parse({
+      t: 'ayni_anda_soyle_answer',
+      answer: '  Tam\u00a0genişlik：Ａ  ',
+      round: 3,
+    })).toEqual({
+      ok: true,
+      value: { t: 'ayni_anda_soyle_answer', answer: 'Tam genişlik:A', round: 3 },
+    });
+    expect(parse({ t: 'ayni_anda_soyle_answer', answer: 'Ailem 👨‍👩‍👧', round: 1 })).toMatchObject({
+      ok: true,
+    });
+    expect(parse({ t: 'ayni_anda_soyle_answer', answer: '🚀'.repeat(32), round: 5 })).toMatchObject({
+      ok: true,
+    });
+  });
+
+  it('ayni anda soyle mesajini exact-key, kisa gorunur cevap ve 1..5 tur ile sinirlar', () => {
+    const invalid = [
+      { t: 'ayni_anda_soyle_answer', answer: 'Pizza' },
+      { t: 'ayni_anda_soyle_answer', answer: 'Pizza', round: 1, admin: true },
+      { t: 'ayni_anda_soyle_answer', answer: '', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: '\u00a0', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: '...!?', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: '\u0301', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'x'.repeat(33), round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: '🚀'.repeat(33), round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 7, round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\nSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\tSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u007fSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u0085Satir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u00adSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u200bSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u2060Satir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u206fSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\ufeffSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u202eSatir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Bir\u2066Satir', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: '\u200d', round: 1 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Pizza', round: 0 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Pizza', round: 6 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Pizza', round: 1.5 },
+      { t: 'ayni_anda_soyle_answer', answer: 'Pizza', round: '1' },
     ];
     for (const value of invalid) {
       expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
