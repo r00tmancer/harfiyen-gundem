@@ -1,0 +1,57 @@
+[
+  { "category": "ilk_hamle", "prompt": "Günün ilk mesajını daha sık kim atar?" },
+  { "category": "ilk_hamle", "prompt": "Tatlı bir sessizliği ilk kim bozar?" },
+  { "category": "ilk_hamle", "prompt": "Yeni bir fikri ilk kim ortaya atar?" },
+  { "category": "ilk_hamle", "prompt": "Fotoğraf çekmeyi ilk kim önerir?" },
+  { "category": "ilk_hamle", "prompt": "Güzel bir haberi kutlamayı ilk kim önerir?" },
+  { "category": "ilk_hamle", "prompt": "Sürpriz bir plan fikrini ilk kim ortaya atar?" },
+
+  { "category": "plan_pusulasi", "prompt": "Hafta sonu planını kim daha önce hazırlar?" },
+  { "category": "plan_pusulasi", "prompt": "Yola çıkmadan rotayı kim kontrol eder?" },
+  { "category": "plan_pusulasi", "prompt": "Takvime ortak planı kim ekler?" },
+  { "category": "plan_pusulasi", "prompt": "Tatil çantasını kim daha erken toplar?" },
+  { "category": "plan_pusulasi", "prompt": "Buluşma saatini ilk kim netleştirir?" },
+  { "category": "plan_pusulasi", "prompt": "Plansız günü kim hızlıca maceraya çevirir?" },
+
+  { "category": "lezzet", "prompt": "Gece atıştırmalığını ilk kim düşünür?" },
+  { "category": "lezzet", "prompt": "Menüde yeni bir lezzeti kim dener?" },
+  { "category": "lezzet", "prompt": "Son lokmayı partnerine kim bırakır?" },
+  { "category": "lezzet", "prompt": "Kahve molasını ilk kim önerir?" },
+  { "category": "lezzet", "prompt": "Mutfağa girince kim doğaçlama bir tarif uydurur?" },
+  { "category": "lezzet", "prompt": "Tatlı söylemeyi ilk kim önerir?" },
+
+  { "category": "kahkaha", "prompt": "En ciddi anda gülmeye ilk kim başlar?" },
+  { "category": "kahkaha", "prompt": "Kötü espriye bile kim daha çok güler?" },
+  { "category": "kahkaha", "prompt": "Bir taklidiyle ortamı kim neşelendirir?" },
+  { "category": "kahkaha", "prompt": "Eski komik anıyı kim tekrar anlatır?" },
+  { "category": "kahkaha", "prompt": "Küçük bir aksilikte kendine ilk kim güler?" },
+  { "category": "kahkaha", "prompt": "Mesajlara en komik tepkiyi kim yollar?" },
+
+  { "category": "macera", "prompt": "Spontane bir geziye kim daha hızlı evet der?" },
+  { "category": "macera", "prompt": "Bilmediği bir sokağa merakla kim girer?" },
+  { "category": "macera", "prompt": "Yeni bir oyunu öğrenmeye ilk kim gönüllü olur?" },
+  { "category": "macera", "prompt": "Lunaparkta en cesur oyuncağı kim seçer?" },
+  { "category": "macera", "prompt": "Yağmurda yürüyüşe kim daha kolay ikna olur?" },
+  { "category": "macera", "prompt": "Sürpriz bir rotayı kim daha çok sever?" },
+
+  { "category": "ince_jest", "prompt": "Üşüyeni fark edip battaniyeyi kim getirir?" },
+  { "category": "ince_jest", "prompt": "Küçük ayrıntıları kim daha iyi hatırlar?" },
+  { "category": "ince_jest", "prompt": "Günün ortasında tatlı bir notu kim bırakır?" },
+  { "category": "ince_jest", "prompt": "Sevilen şarkıyı sıraya kim ekler?" },
+  { "category": "ince_jest", "prompt": "Yorgunluğu ilk kim fark edip destek olur?" },
+  { "category": "ince_jest", "prompt": "Partnerinin favorisini kim daha iyi bilir?" },
+
+  { "category": "sosyal_sahne", "prompt": "Yeni ortamda sohbeti ilk kim başlatır?" },
+  { "category": "sosyal_sahne", "prompt": "Grup fotoğrafını kim organize eder?" },
+  { "category": "sosyal_sahne", "prompt": "Arkadaş buluşmasını kim daha hızlı ayarlar?" },
+  { "category": "sosyal_sahne", "prompt": "Kalabalıkta yolu kim daha kolay bulur?" },
+  { "category": "sosyal_sahne", "prompt": "Partide dans pistine ilk kim çıkar?" },
+  { "category": "sosyal_sahne", "prompt": "Yeni biriyle ortak konuyu kim daha hızlı bulur?" },
+
+  { "category": "gece_modu", "prompt": "Uyumadan önce son mesajı kim atar?" },
+  { "category": "gece_modu", "prompt": "Gece bir bölüm daha izlemeyi kim ister?" },
+  { "category": "gece_modu", "prompt": "Yastık sohbetini kim daha çok uzatır?" },
+  { "category": "gece_modu", "prompt": "Alarmı bir kez daha kim erteler?" },
+  { "category": "gece_modu", "prompt": "Gece yıldızlara bakmayı kim önerir?" },
+  { "category": "gece_modu", "prompt": "Uykusu gelince ilk kim sessizleşir?" }
+]

@@ -6,6 +6,7 @@ import {
   EMOJI_SIFRE_PALETTE,
   EMOJI_SIFRE_ROUNDS,
   KOR_SIRALAMA_ITEMS,
+  KIM_DAHA_MUHTEMEL_ROUNDS,
   KIRMIZI_YESIL_ROUNDS,
   RANDEVU_RULETI_CHOICE_COUNT,
   RANDEVU_RULETI_ROUNDS,
@@ -15,7 +16,13 @@ import {
   TR_LETTERS,
   normalizeTr,
 } from '@harfiyen/shared';
-import type { ClientMsg, EmojiSifreCode, GameMode, KirmiziYesilChoice } from '@harfiyen/shared';
+import type {
+  ClientMsg,
+  EmojiSifreCode,
+  GameMode,
+  KimDahaMuhtemelChoice,
+  KirmiziYesilChoice,
+} from '@harfiyen/shared';
 
 // Normal oyun hamleleri birkac yuz byte'i gecmez. Sinir, JSON.parse oncesinde
 // uygulanir; boylece istemci tek cerceveyle DO'ya sinirsiz ayrıştırma isi veremez.
@@ -43,6 +50,7 @@ const GAME_MODES = {
   randevu_ruleti: true,
   emoji_sifre: true,
   kirmizi_yesil: true,
+  kim_daha_muhtemel: true,
 } satisfies Readonly<Record<GameMode, true>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -81,6 +89,10 @@ function isEmojiSifreCode(value: unknown): value is EmojiSifreCode {
 
 function isKirmiziYesilChoice(value: unknown): value is KirmiziYesilChoice {
   return value === 'red' || value === 'depends' || value === 'green';
+}
+
+function isKimDahaMuhtemelChoice(value: unknown): value is KimDahaMuhtemelChoice {
+  return value === 'self' || value === 'partner' || value === 'both';
 }
 
 function validateParsedMessage(value: unknown): ClientMsg | null {
@@ -183,6 +195,13 @@ function validateParsedMessage(value: unknown): ClientMsg | null {
         isKirmiziYesilChoice(value.choice) &&
         isIntegerInRange(value.round, 1, KIRMIZI_YESIL_ROUNDS)
         ? { t: 'kirmizi_yesil_vote', choice: value.choice, round: value.round }
+        : null;
+
+    case 'kim_daha_muhtemel_vote':
+      return hasExactKeys(value, ['t', 'choice', 'round']) &&
+        isKimDahaMuhtemelChoice(value.choice) &&
+        isIntegerInRange(value.round, 1, KIM_DAHA_MUHTEMEL_ROUNDS)
+        ? { t: 'kim_daha_muhtemel_vote', choice: value.choice, round: value.round }
         : null;
 
     case 'use_joker':

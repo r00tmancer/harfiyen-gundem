@@ -5,6 +5,7 @@ import {
   BOM_LIVES,
   EMOJI_SIFRE_ROUNDS,
   JOKER_FREEZE_MS,
+  KIM_DAHA_MUHTEMEL_ROUNDS,
   KIRMIZI_YESIL_ROUNDS,
   KOR_SIRALAMA_ITEMS,
   PICK_MS,
@@ -19,7 +20,7 @@ import type { PlayerPublic, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, REJECT_TEXT, useStore } from '../store';
 import { send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconRanking, IconRoulette, IconSnowflake, IconSwap } from '../ui/icons';
+import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconSnowflake, IconSwap } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, Stars, TimerBar, WinWash } from '../ui/parts';
 import { useRemaining, up } from '../hooks';
@@ -36,6 +37,7 @@ import { BeniYakalaAnswer, BeniYakalaPredict, BeniYakalaReveal } from './modes/B
 import { RandevuRuletiPick, RandevuRuletiReveal } from './modes/RandevuRuletiGame';
 import { EmojiSifreEncode, EmojiSifreGuess, EmojiSifreReveal } from './modes/EmojiSifreGame';
 import { KirmiziYesilReveal, KirmiziYesilVote } from './modes/KirmiziYesilGame';
+import { KimDahaMuhtemelReveal, KimDahaMuhtemelVote } from './modes/KimDahaMuhtemelGame';
 
 // skor gostergesi moda gore: harf/uzun yildiz, sayi madalya, zincir/bom kalp, telepati ortak uyum
 function ScoreGauge({ snap, p }: { snap: RoomSnapshot; p: PlayerPublic }) {
@@ -69,6 +71,7 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
   const isRoulette = snap.mode === 'randevu_ruleti';
   const isEmoji = snap.mode === 'emoji_sifre';
   const isFlags = snap.mode === 'kirmizi_yesil';
+  const isLikely = snap.mode === 'kim_daha_muhtemel';
   const matches = isRanking
     ? (snap.korSiralama?.exactMatches ?? 0)
     : isReading
@@ -79,6 +82,8 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
           ? (snap.emojiSifre?.correctCount ?? 0)
         : isFlags
           ? (snap.kirmiziYesil?.matches ?? 0)
+        : isLikely
+          ? (snap.kimDahaMuhtemel?.agreements ?? 0)
       : (snap.telepati?.matches ?? 0);
   const countRef = useRef<HTMLSpanElement>(null);
   const prev = useRef(matches);
@@ -91,17 +96,17 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
 
   return (
     <div
-      className={`flex items-center justify-between gap-2 rounded-2xl border-[3px] px-3 py-2 ${isRoulette ? 'roulette-coop' : ''} ${isEmoji ? 'emoji-coop' : ''} ${isFlags ? 'flag-coop' : ''}`}
+      className={`flex items-center justify-between gap-2 rounded-2xl border-[3px] px-3 py-2 ${isRoulette ? 'roulette-coop' : ''} ${isEmoji ? 'emoji-coop' : ''} ${isFlags ? 'flag-coop' : ''} ${isLikely ? 'likely-coop' : ''}`}
       style={{
-        borderColor: isRoulette || isEmoji || isFlags ? '#8B6FD2' : 'var(--ink)',
-        background: isRoulette || isEmoji || isFlags ? '#15112B' : 'var(--p1-soft)',
-        boxShadow: isRoulette || isEmoji || isFlags ? '0 4px 0 rgba(168,117,255,.28)' : '0 4px 0 var(--shadow-ink)',
+        borderColor: isRoulette || isEmoji || isFlags || isLikely ? '#8B6FD2' : 'var(--ink)',
+        background: isRoulette || isEmoji || isFlags || isLikely ? '#15112B' : 'var(--p1-soft)',
+        boxShadow: isRoulette || isEmoji || isFlags || isLikely ? '0 4px 0 rgba(168,117,255,.28)' : '0 4px 0 var(--shadow-ink)',
       }}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={38} />}
         <span className="inline-flex shrink-0" style={{ color: 'var(--p1)' }} aria-hidden="true">
-          {isRanking ? <IconRanking size={20} /> : isRoulette ? <IconRoulette size={20} /> : isEmoji ? <IconEmojiCode size={20} /> : isFlags ? <IconFlagRadar size={20} /> : <IconHeartSolid size={20} />}
+          {isRanking ? <IconRanking size={20} /> : isRoulette ? <IconRoulette size={20} /> : isEmoji ? <IconEmojiCode size={20} /> : isFlags ? <IconFlagRadar size={20} /> : isLikely ? <IconLikely size={20} /> : <IconHeartSolid size={20} />}
         </span>
         {opp && (
           <Avatar
@@ -125,10 +130,12 @@ function CoopScoreBar({ snap }: { snap: RoomSnapshot }) {
           <IconEmojiCode size={15} style={{ color: '#58E8FF' }} />
         ) : isFlags ? (
           <IconFlagRadar size={15} style={{ color: '#FFD166' }} />
+        ) : isLikely ? (
+          <IconLikely size={15} style={{ color: '#FFD166' }} />
         ) : (
           <IconHeartSolid size={15} style={{ color: 'var(--p1-dark)' }} />
         )}
-        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : isRoulette ? 'aynı seçim' : isEmoji ? 'ortak şifre' : isFlags ? 'aynı renk' : 'uyum'}
+        {matches} {isRanking ? 'aynı sıra' : isReading ? 'kalp okudun' : isRoulette ? 'aynı seçim' : isEmoji ? 'ortak şifre' : isFlags ? 'aynı renk' : isLikely ? 'aynı hedef' : 'uyum'}
       </span>
     </div>
   );
@@ -646,7 +653,7 @@ export default function Game() {
   const mode = snapshot.mode;
 
   return (
-    <div ref={rootRef} className={`flex w-full flex-col gap-4 pt-3 pb-6 ${mode === 'randevu_ruleti' ? 'roulette-shell' : ''} ${mode === 'emoji_sifre' ? 'emoji-shell' : ''} ${mode === 'kirmizi_yesil' ? 'flag-shell' : ''}`}>
+    <div ref={rootRef} className={`flex w-full flex-col gap-4 pt-3 pb-6 ${mode === 'randevu_ruleti' ? 'roulette-shell' : ''} ${mode === 'emoji_sifre' ? 'emoji-shell' : ''} ${mode === 'kirmizi_yesil' ? 'flag-shell' : ''} ${mode === 'kim_daha_muhtemel' ? 'likely-shell' : ''}`}>
       {boomFx && (
         <div key={boomFx.key} aria-hidden="true">
           <div className="boom-flash" />
@@ -654,7 +661,7 @@ export default function Game() {
         </div>
       )}
       {/* ko-op modlar: vs yerine yan yana avatarlar + ortak ilerleme */}
-      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' || mode === 'randevu_ruleti' || mode === 'emoji_sifre' || mode === 'kirmizi_yesil' ? (
+      {mode === 'telepati' || mode === 'kor_siralama' || mode === 'beni_yakala' || mode === 'randevu_ruleti' || mode === 'emoji_sifre' || mode === 'kirmizi_yesil' || mode === 'kim_daha_muhtemel' ? (
         <CoopScoreBar snap={snapshot} />
       ) : (
         <ScoreBar snap={snapshot} />
@@ -677,6 +684,8 @@ export default function Game() {
                       ? 'Şifre'
                     : mode === 'kirmizi_yesil'
                       ? 'Radar'
+                    : mode === 'kim_daha_muhtemel'
+                      ? 'İşaret'
                   : 'Raunt'}{' '}
           {snapshot.round}
           {mode === 'telepati'
@@ -691,6 +700,8 @@ export default function Game() {
                   ? `/${EMOJI_SIFRE_ROUNDS}`
                 : mode === 'kirmizi_yesil'
                   ? `/${KIRMIZI_YESIL_ROUNDS}`
+                : mode === 'kim_daha_muhtemel'
+                  ? `/${KIM_DAHA_MUHTEMEL_ROUNDS}`
                 : ''}
         </div>
         <div className="chip" style={{ background: 'color-mix(in srgb, var(--grape) 22%, #fff)' }}>
@@ -719,6 +730,8 @@ export default function Game() {
       {snapshot.phase === 'emoji_sifre_reveal' && <EmojiSifreReveal snap={snapshot} />}
       {snapshot.phase === 'kirmizi_yesil_vote' && <KirmiziYesilVote snap={snapshot} />}
       {snapshot.phase === 'kirmizi_yesil_reveal' && <KirmiziYesilReveal snap={snapshot} />}
+      {snapshot.phase === 'kim_daha_muhtemel_vote' && <KimDahaMuhtemelVote snap={snapshot} />}
+      {snapshot.phase === 'kim_daha_muhtemel_reveal' && <KimDahaMuhtemelReveal snap={snapshot} />}
       {snapshot.phase === 'round_end' &&
         (mode === 'sayi' ? (
           <SayiRoundEnd snap={snapshot} />

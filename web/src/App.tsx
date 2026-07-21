@@ -23,15 +23,16 @@ export default function App() {
   const darkRandevu = mode === 'randevu_ruleti' && (screen === 'game' || screen === 'victory');
   const darkEmoji = mode === 'emoji_sifre' && (screen === 'game' || screen === 'victory');
   const darkFlags = mode === 'kirmizi_yesil' && (screen === 'game' || screen === 'victory');
-  const darkMode = darkRandevu || darkEmoji || darkFlags;
+  const darkLikely = mode === 'kim_daha_muhtemel' && (screen === 'game' || screen === 'victory');
+  const darkMode = darkRandevu || darkEmoji || darkFlags || darkLikely;
 
   useEffect(() => {
     const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const statusBar = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]');
-    theme?.setAttribute('content', darkFlags ? '#0A0E16' : darkEmoji ? '#0C0920' : darkRandevu ? '#09071A' : '#FFF6EC');
+    theme?.setAttribute('content', darkLikely ? '#0B0D18' : darkFlags ? '#0A0E16' : darkEmoji ? '#0C0920' : darkRandevu ? '#09071A' : '#FFF6EC');
     statusBar?.setAttribute('content', darkMode ? 'black-translucent' : 'default');
     document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
-  }, [darkEmoji, darkFlags, darkMode, darkRandevu]);
+  }, [darkEmoji, darkFlags, darkLikely, darkMode, darkRandevu]);
 
   return (
     <>

@@ -16,6 +16,7 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'set_mode', mode: 'randevu_ruleti' },
     { t: 'set_mode', mode: 'emoji_sifre' },
     { t: 'set_mode', mode: 'kirmizi_yesil' },
+    { t: 'set_mode', mode: 'kim_daha_muhtemel' },
     { t: 'pick_letter', letter: 'İ' },
     { t: 'submit_word', word: 'incir' },
     { t: 'pick_number', value: 1 },
@@ -36,6 +37,9 @@ describe('parseClientMessage — gecerli protokol', () => {
     { t: 'kirmizi_yesil_vote', choice: 'red', round: 1 },
     { t: 'kirmizi_yesil_vote', choice: 'depends', round: 4 },
     { t: 'kirmizi_yesil_vote', choice: 'green', round: 8 },
+    { t: 'kim_daha_muhtemel_vote', choice: 'self', round: 1 },
+    { t: 'kim_daha_muhtemel_vote', choice: 'partner', round: 4 },
+    { t: 'kim_daha_muhtemel_vote', choice: 'both', round: 8 },
     { t: 'use_joker' },
     { t: 'react', id: 0 },
     { t: 'react', id: 5 },
@@ -237,6 +241,25 @@ describe('parseClientMessage — guvenilmeyen JSON', () => {
       { t: 'kirmizi_yesil_vote', choice: 'red' },
       { t: 'kirmizi_yesil_vote', choice: 'red', round: 1, pid: 'p2' },
       { t: 'kirmizi_yesil_vote', choice: 'red', round: 1, role: 'admin' },
+    ];
+    for (const value of invalid) {
+      expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });
+    }
+  });
+
+  it('kim daha muhtemel oyunu exact-key choice ve 1..8 tur araliginda dogrular', () => {
+    const invalid = [
+      { t: 'kim_daha_muhtemel_vote', choice: 'SELF', round: 1 },
+      { t: 'kim_daha_muhtemel_vote', choice: 'partner ', round: 1 },
+      { t: 'kim_daha_muhtemel_vote', choice: 'player', round: 1 },
+      { t: 'kim_daha_muhtemel_vote', choice: true, round: 1 },
+      { t: 'kim_daha_muhtemel_vote', choice: 'self', round: 0 },
+      { t: 'kim_daha_muhtemel_vote', choice: 'both', round: 9 },
+      { t: 'kim_daha_muhtemel_vote', choice: 'partner', round: 1.5 },
+      { t: 'kim_daha_muhtemel_vote', choice: 'self', round: '1' },
+      { t: 'kim_daha_muhtemel_vote', choice: 'self' },
+      { t: 'kim_daha_muhtemel_vote', choice: 'self', round: 1, pid: 'p2' },
+      { t: 'kim_daha_muhtemel_vote', choice: 'partner', round: 1, role: 'admin' },
     ];
     for (const value of invalid) {
       expect(parse(value)).toEqual({ ok: false, reason: 'invalid_message' });

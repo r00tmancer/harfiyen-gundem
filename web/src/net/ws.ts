@@ -28,6 +28,13 @@ export function getReconnectSecret(code: string): string {
   return secret;
 }
 
+// Davet linki ile daha once katilinan odayi ayirir. Bir secret varsa ayni
+// tarayici oyuncuyu guvenli reconnect protokoluyle otomatik geri alabilir.
+export function hasReconnectSecret(code: string): boolean {
+  const secret = localStorage.getItem(`${RECONNECT_KEY_PREFIX}${code.toUpperCase()}`);
+  return secret !== null && SECRET_RE.test(secret);
+}
+
 function getClientRateId(): string {
   let id = localStorage.getItem(CLIENT_RATE_KEY);
   if (!id || !SECRET_RE.test(id)) {

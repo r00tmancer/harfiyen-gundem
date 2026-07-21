@@ -263,6 +263,19 @@ export function IconFlagRadar({ size = 22, ...props }: { size?: number } & SVGPr
   );
 }
 
+// iki oyuncuyu spot isigina alan isaret: Kim Daha Muhtemel? modu
+export function IconLikely({ size = 22, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(size, props)}>
+      <circle cx="7" cy="8" r="3" fill="currentColor" fillOpacity={0.16} />
+      <circle cx="17" cy="8" r="3" fill="currentColor" fillOpacity={0.16} />
+      <path d="M2.8 19c.6-3.6 2-5.4 4.2-5.4s3.6 1.8 4.2 5.4M12.8 19c.6-3.6 2-5.4 4.2-5.4s3.6 1.8 4.2 5.4" />
+      <path d="M12 2.5v3M10.2 4h3.6M12 10.2v2.3" strokeWidth={1.9} />
+      <path d="M9.4 11.1L12 13.7l2.6-2.6" strokeWidth={1.9} />
+    </svg>
+  );
+}
+
 // dolu kalp: uyum sayaci + avatarlar arasi kalp
 export function IconHeartSolid({ size = 16, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

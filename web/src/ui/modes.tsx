@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { SVGProps } from 'react';
 import type { GameMode } from '@harfiyen/shared';
-import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
+import { IconBomb, IconBurst, IconEmojiCode, IconFlagRadar, IconHeartsDuo, IconLikely, IconRanking, IconRoulette, IconRuler, IconTarget, IconTilesDuo } from './icons';
 
 // mod tanitim metinleri + ikonlari (lobi karti, oyun basligi, zafer ekrani)
-export const MODE_ORDER: GameMode[] = ['kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
+export const MODE_ORDER: GameMode[] = ['kim_daha_muhtemel', 'kirmizi_yesil', 'emoji_sifre', 'randevu_ruleti', 'beni_yakala', 'kor_siralama', 'telepati', 'harf', 'sayi', 'zincir', 'uzun', 'bom'];
 
 export interface ModeMeta {
   name: string;
@@ -15,6 +15,13 @@ export interface ModeMeta {
 }
 
 export const MODE_META: Record<GameMode, ModeMeta> = {
+  kim_daha_muhtemel: {
+    name: 'Kim Daha Muhtemel?',
+    desc: 'Sekiz eğlenceli rolde gizlice birbirinizi işaretleyin.',
+    joker: '8 tur · Ben, partnerim veya ikimiz',
+    badge: 'YENİ · 1 DK',
+    Icon: IconLikely,
+  },
   harf: {
     name: 'Harf Yarışı',
     desc: 'İki harfe uyan kelimeleri rakipten önce yaz.',

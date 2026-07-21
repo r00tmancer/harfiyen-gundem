@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KIRMIZI_YESIL_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
+import { BENI_YAKALA_ROUNDS, BOM_LIVES, EMOJI_SIFRE_PALETTE, EMOJI_SIFRE_ROUNDS, KIM_DAHA_MUHTEMEL_ROUNDS, KIRMIZI_YESIL_ROUNDS, KOR_SIRALAMA_ITEMS, RANDEVU_RULETI_ROUNDS, TELEPATI_QUESTIONS, ZINCIR_LIVES } from '@harfiyen/shared';
 import type { PlayerPublic, RandevuCategory, RoomSnapshot } from '@harfiyen/shared';
 import { meOf, oppOf, playerIndex, useStore } from '../store';
 import { leaveRoom, send } from '../net/ws';
 import { Avatar } from '../ui/avatars';
-import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconRanking, IconRoulette, IconShare } from '../ui/icons';
+import { IconEmojiCode, IconFlagRadar, IconHeartSolid, IconLikely, IconRanking, IconRoulette, IconShare } from '../ui/icons';
 import { MODE_META } from '../ui/modes';
 import { Hearts, MedalDots, PLAYER_CSS, WinWash } from '../ui/parts';
 import { staggerIn } from '../fx/anim';
@@ -16,6 +16,7 @@ import { createBeniYakalaShareCard } from '../share/beniYakalaCard';
 import { createRandevuRuletiShareCard } from '../share/randevuRuletiCard';
 import { createEmojiSifreShareCard } from '../share/emojiSifreCard';
 import { createKirmiziYesilShareCard } from '../share/kirmiziYesilCard';
+import { createKimDahaMuhtemelShareCard } from '../share/kimDahaMuhtemelCard';
 import { PUBLIC_URL } from '../config';
 
 const GAME_URL = PUBLIC_URL;
@@ -113,6 +114,10 @@ function isKoopKirmiziYesil(snap: RoomSnapshot): boolean {
   return snap.mode === 'kirmizi_yesil' && snap.winner === null && snap.phase === 'match_end';
 }
 
+function isKoopKimDahaMuhtemel(snap: RoomSnapshot): boolean {
+  return snap.mode === 'kim_daha_muhtemel' && snap.winner === null && snap.phase === 'match_end';
+}
+
 // cifte kalple %100'u asabilir; asla kirpilmaz ('%110 uyum!' daha tatli)
 function telepatiPct(snap: RoomSnapshot): number {
   const matches = snap.telepati?.matches ?? meOf(snap)?.score ?? 0;
@@ -145,6 +150,13 @@ function kirmiziYesilPct(snap: RoomSnapshot): number {
     ?? (game.jointRounds === 0 ? 0 : Math.round((game.matches / game.jointRounds) * 100));
 }
 
+function kimDahaMuhtemelPct(snap: RoomSnapshot): number {
+  const game = snap.kimDahaMuhtemel;
+  if (!game) return 0;
+  return game.agreementPct
+    ?? (game.jointRounds === 0 ? 0 : Math.round((game.agreements / game.jointRounds) * 100));
+}
+
 function kirmiziYesilResult(jointRounds: number, pct: number): { title: string; subtitle: string } {
   if (jointRounds < 4) {
     return { title: 'Radar yarım kaldı', subtitle: 'Sağlam bir sonuç için birkaç ortak seçim daha gerekiyordu.' };
@@ -159,6 +171,22 @@ function kirmiziYesilResult(jointRounds: number, pct: number): { title: string; 
     return { title: 'Tatlı gri alan', subtitle: 'Konuşacak güzel başlıklar çıktı.' };
   }
   return { title: 'Farklı renk, aynı takım', subtitle: 'Aynı durumlara kendi renginizden bakıyorsunuz.' };
+}
+
+function kimDahaMuhtemelResult(jointRounds: number, pct: number): { title: string; subtitle: string } {
+  if (jointRounds < 4) {
+    return { title: 'Tur yarım kaldı', subtitle: 'Sağlam bir özet için birkaç ortak işaret daha gerekiyordu.' };
+  }
+  if (pct >= 88) {
+    return { title: 'Parmak telepatisi', subtitle: 'Neredeyse her soruda aynı hedefi gösterdiniz.' };
+  }
+  if (pct >= 63) {
+    return { title: 'Çoğunlukla aynı yön', subtitle: 'Spot ışıklarınız sık sık buluştu.' };
+  }
+  if (pct >= 38) {
+    return { title: 'Tatlı bir denge', subtitle: 'Hem ortak hem ayrı rolleriniz var.' };
+  }
+  return { title: 'Farklı rol, aynı takım', subtitle: 'Sorulara kendi pencerenizden baktınız.' };
 }
 
 function randevuCategoryLabel(category: RandevuCategory): string {
@@ -224,7 +252,9 @@ function ShareButton({
   title?: string;
   makeFile?: () => Promise<File>;
 }) {
-  const [status, setStatus] = useState<'copied' | 'downloaded' | 'error' | null>(null);
+  const [status, setStatus] = useState<
+    'copied' | 'downloaded' | 'downloaded_copied' | 'error' | null
+  >(null);
   const [busy, setBusy] = useState(false);
 
   async function share() {
@@ -247,14 +277,26 @@ function ShareButton({
         typeof navigator.canShare === 'function' &&
         navigator.canShare({ files: [file] })
       ) {
-        await navigator.share({ title, text, files: [file] });
-        return;
+        try {
+          await navigator.share({ title, text, files: [file] });
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          // Dosyali share sheet hata verirse metin veya indirme fallback'ine gec.
+        }
       }
-      if (typeof navigator.share === 'function' && !file) {
-        await navigator.share({ title, text });
-        return;
+      // Dosya paylasimi desteklenmese bile sistemin metin share sheet'ini dene.
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title, text });
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          // Sistem paylasimi basarisizsa indirme/pano fallback'i devam eder.
+        }
       }
 
+      let downloaded = false;
       if (file) {
         const url = URL.createObjectURL(file);
         const link = document.createElement('a');
@@ -262,9 +304,15 @@ function ShareButton({
         link.download = file.name;
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        downloaded = true;
       }
-      await navigator.clipboard.writeText(text);
-      setStatus(file ? 'downloaded' : 'copied');
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus(downloaded ? 'downloaded_copied' : 'copied');
+      } catch {
+        // Gorsel zaten indirildiyse pano izni hatasi basarili indirmeyi bozmaz.
+        setStatus(downloaded ? 'downloaded' : 'error');
+      }
       window.setTimeout(() => setStatus(null), 2400);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -282,8 +330,10 @@ function ShareButton({
       </button>
       {status && (
         <span className="chip chip-ok" role="status">
-          {status === 'downloaded'
+          {status === 'downloaded_copied'
             ? 'Görsel indirildi, metin kopyalandı!'
+            : status === 'downloaded'
+              ? 'Görsel indirildi!'
             : status === 'copied'
               ? 'Kopyalandı!'
               : 'Paylaşım hazırlanamadı'}
@@ -325,7 +375,8 @@ export default function Victory() {
       isKoopBeniYakala(snapshot) ||
       isKoopRandevuRuleti(snapshot) ||
       isKoopEmojiSifre(snapshot) ||
-      isKoopKirmiziYesil(snapshot)
+      isKoopKirmiziYesil(snapshot) ||
+      isKoopKimDahaMuhtemel(snapshot)
     ) {
       celebratedSeq = matchEndSeq;
       haptics.victory();
@@ -339,10 +390,14 @@ export default function Victory() {
               ? randevuRuletiPct(snapshot)
               : isKoopEmojiSifre(snapshot)
                 ? emojiSifrePct(snapshot)
-                : kirmiziYesilPct(snapshot);
+                : isKoopKirmiziYesil(snapshot)
+                  ? kirmiziYesilPct(snapshot)
+                  : kimDahaMuhtemelPct(snapshot);
       const enoughFlagRounds = !isKoopKirmiziYesil(snapshot)
         || (snapshot.kirmiziYesil?.jointRounds ?? 0) >= 4;
-      if (pct >= 70 && enoughFlagRounds) heartRain();
+      const enoughLikelyRounds = !isKoopKimDahaMuhtemel(snapshot)
+        || (snapshot.kimDahaMuhtemel?.jointRounds ?? 0) >= 4;
+      if (pct >= 70 && enoughFlagRounds && enoughLikelyRounds) heartRain();
       return;
     }
     if (!winner) return;
@@ -373,6 +428,8 @@ export default function Victory() {
         ? `Emoji Şifre'de ${snapshot.emojiSifre?.correctCount ?? 0}/${EMOJI_SIFRE_ROUNDS} ortak şifre çözdük! Siz de üç emojiyle anlatın: ${GAME_URL}`
       : isKoopKirmiziYesil(snapshot)
         ? `Kırmızı mı Yeşil mi? oyununda ${snapshot.kirmiziYesil?.matches ?? 0}/${KIRMIZI_YESIL_ROUNDS} aynı rengi seçtik! Siz de ilişki radarınızı açın: ${GAME_URL}`
+      : isKoopKimDahaMuhtemel(snapshot)
+        ? `Kim Daha Muhtemel? oyununda ${snapshot.kimDahaMuhtemel?.agreements ?? 0}/${KIM_DAHA_MUHTEMEL_ROUNDS} kez aynı hedefi gösterdik! Siz de deneyin: ${GAME_URL}`
       : iWon && opp
       ? `Harfiyen'de ${opp.nick}'i ${scorelineOf(snapshot)} yendim! Sen de oyna: ${GAME_URL}`
       : `Harfiyen'de kıl payı kaybettim, rövanş şart! Sen de oyna: ${GAME_URL}`;
@@ -464,7 +521,34 @@ export default function Victory() {
             url: GAME_URL,
           })
       : undefined;
-  const shareTitle = isKoopKirmiziYesil(snapshot)
+  const likely = snapshot.kimDahaMuhtemel;
+  const featuredLikelyPrompt = likely
+    ? [...likely.history].reverse().find((round) => (
+        round.resolution !== 'solo' && round.resolution !== 'skipped'
+      ))?.prompt
+      ?? 'Sence hanginiz bunu yapmaya daha yatkın?'
+    : 'Sence hanginiz bunu yapmaya daha yatkın?';
+  const makeLikelyShareFile =
+    isKoopKimDahaMuhtemel(snapshot) && me && opp && likely
+      ? () =>
+          createKimDahaMuhtemelShareCard({
+            playerA: me.nick,
+            playerB: opp.nick,
+            agreements: likely.agreements,
+            samePersonAgreements: likely.samePersonAgreements,
+            bothAgreements: likely.bothAgreements,
+            jointRounds: likely.jointRounds,
+            splitRounds: likely.splitRounds,
+            missedRounds: likely.missedRounds,
+            agreementPct: likely.agreementPct ?? kimDahaMuhtemelPct(snapshot),
+            // Yalnız açılmış ortak turdan soru aktarılır; hedefler Story API'sine giremez.
+            featuredPrompt: featuredLikelyPrompt,
+            url: GAME_URL,
+          })
+      : undefined;
+  const shareTitle = isKoopKimDahaMuhtemel(snapshot)
+    ? 'Kim Daha Muhtemel? Sonucu'
+    : isKoopKirmiziYesil(snapshot)
     ? 'Kırmızı mı Yeşil mi? Sonucu'
     : isKoopEmojiSifre(snapshot)
     ? 'Emoji Şifre Sonucu'
@@ -505,7 +589,7 @@ export default function Victory() {
         <ShareButton
           text={shareMsg}
           title={shareTitle}
-          makeFile={makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
+          makeFile={makeLikelyShareFile ?? makeFlagsShareFile ?? makeEmojiShareFile ?? makeRandevuShareFile ?? makeBeniShareFile ?? makeKorShareFile}
         />
         <button type="button" className="btn-candy btn-block" onClick={() => leaveRoom()}>
           Yeni oda
@@ -621,6 +705,83 @@ export default function Victory() {
 
         <p data-pop className="text-[12px] font-bold" style={{ color: 'var(--ink-soft)' }}>
           1 favori · 5 en sona
+        </p>
+        {footer}
+      </div>
+    );
+  }
+
+  // ---- ko-op Kim Daha Muhtemel?: anonim ortak metrikler, bireysel hedef yok ----
+  if (isKoopKimDahaMuhtemel(snapshot)) {
+    const game = snapshot.kimDahaMuhtemel;
+    const agreements = game?.agreements ?? 0;
+    const pct = kimDahaMuhtemelPct(snapshot);
+    const jointRounds = game?.jointRounds ?? 0;
+    const resultIncomplete = jointRounds < 4;
+    const result = kimDahaMuhtemelResult(jointRounds, pct);
+    return (
+      <div ref={root} className="likely-shell likely-victory flex w-full flex-col items-center gap-4 pt-5 pb-6 text-center">
+        <div data-pop className="flex items-center gap-3">
+          {me && <Avatar index={me.avatar} color={PLAYER_CSS[myIdx].main} size={58} />}
+          <span className="likely-final-icon" aria-hidden="true"><IconLikely size={39} /></span>
+          {opp && (
+            <Avatar
+              index={opp.avatar}
+              color={PLAYER_CSS[oppIdx].main}
+              size={58}
+              className={opp.connected ? '' : 'grayed'}
+            />
+          )}
+        </div>
+
+        <div data-pop>
+          <p className="likely-final-kicker">SPOT IŞIKLARI KAPANDI</p>
+          <div className="likely-final-names">
+            {MODE_META.kim_daha_muhtemel.name}
+            {opp ? ` · ${me?.nick ?? ''} + ${opp.nick}` : ''}
+          </div>
+        </div>
+
+        <div
+          data-pop
+          className="likely-final-score"
+          role="status"
+          aria-label={resultIncomplete
+            ? `${KIM_DAHA_MUHTEMEL_ROUNDS} üzerinden ${agreements} aynı hedef, yeterli ortak oy yok`
+            : `${KIM_DAHA_MUHTEMEL_ROUNDS} üzerinden ${agreements} aynı hedef, yüzde ${pct} aynı yön`}
+        >
+          <h1><strong>{agreements}/{KIM_DAHA_MUHTEMEL_ROUNDS}</strong><span>AYNI HEDEF</span></h1>
+          <small>{resultIncomplete ? 'Yeterli ortak oy yok' : `%${pct} aynı yön`}</small>
+        </div>
+
+        <div data-pop className="likely-result-copy">
+          <h2>{result.title}</h2>
+          <p>{result.subtitle}</p>
+        </div>
+
+        <div data-pop className="likely-final-stats" aria-label="Anonim ortak işaret özeti">
+          <div className="likely-final-stat person">
+            <strong>{game?.samePersonAgreements ?? 0}</strong>
+            <span>AYNI KİŞİ</span>
+          </div>
+          <div className="likely-final-stat both">
+            <strong>{game?.bothAgreements ?? 0}</strong>
+            <span>İKİNİZ DE</span>
+          </div>
+          <div className="likely-final-stat split">
+            <strong>{game?.splitRounds ?? 0}</strong>
+            <span>AYRI YÖN</span>
+          </div>
+        </div>
+
+        <div data-pop className="likely-final-summary">
+          <span>{jointRounds}/{KIM_DAHA_MUHTEMEL_ROUNDS} birlikte cevaplandı</span>
+          <span>{game?.missedRounds ?? 0} kaçan tur</span>
+        </div>
+
+        <p data-pop className="likely-trust-note">Doğru cevap yok; eğlencelik bir tahmin.</p>
+        <p data-pop className="likely-story-privacy">
+          Story'de ortak özet paylaşılır; bireysel işaretleriniz gösterilmez.
         </p>
         {footer}
       </div>

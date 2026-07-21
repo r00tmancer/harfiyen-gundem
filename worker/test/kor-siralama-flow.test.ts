@@ -70,6 +70,7 @@ function stateForRank(): RoomState {
     randevuRuleti: null,
     emojiSifre: null,
     kirmiziYesil: null,
+    kimDahaMuhtemel: null,
   };
 }
 

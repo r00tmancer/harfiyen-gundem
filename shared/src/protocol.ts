@@ -27,7 +27,8 @@ export type GameMode =
   | 'beni_yakala'
   | 'randevu_ruleti'
   | 'emoji_sifre'
-  | 'kirmizi_yesil';
+  | 'kirmizi_yesil'
+  | 'kim_daha_muhtemel';
 export const DEFAULT_MODE: GameMode = 'harf';
 
 // Telepati (Uyum Testi) — ko-op: aynı soruya gizlice cevap verin, uyuşursa ortak puan
@@ -70,6 +71,11 @@ export const EMOJI_SIFRE_PALETTE = [
 export const KIRMIZI_YESIL_ROUNDS = 8;
 export const KIRMIZI_YESIL_VOTE_MS = 9_000;
 export const KIRMIZI_YESIL_REVEAL_MS = 2_200;
+
+// Kim Daha Muhtemel? — ayni soruda kimin isaret edildigine gizlice oy verilir
+export const KIM_DAHA_MUHTEMEL_ROUNDS = 8;
+export const KIM_DAHA_MUHTEMEL_VOTE_MS = 9_000;
+export const KIM_DAHA_MUHTEMEL_REVEAL_MS = 2_300;
 
 // Tepkiler: maç içi sticker gönderimi
 export const REACTION_COUNT = 6; // sticker id: 0..5
@@ -121,6 +127,7 @@ export const MODE_JOKER: Record<GameMode, JokerKind | null> = {
   randevu_ruleti: null, // bu modda joker yok
   emoji_sifre: null, // bu kisa co-op modunda joker yok
   kirmizi_yesil: null, // bu hizli uyum testinde joker yok
+  kim_daha_muhtemel: null, // bu hizli cift oyununda joker yok
 };
 
 export const TR_LETTERS = [
@@ -178,6 +185,8 @@ export type Phase =
   | 'emoji_sifre_reveal' // (emoji sifre) hedef, kod ve tahmin aciliyor
   | 'kirmizi_yesil_vote' // (kirmizi mi yesil mi) iki oyuncu gizlice oy veriyor
   | 'kirmizi_yesil_reveal' // (kirmizi mi yesil mi) iki oy aciliyor
+  | 'kim_daha_muhtemel_vote' // iki oyuncu self/partner/both secimini gizlice kilitliyor
+  | 'kim_daha_muhtemel_reveal' // oylar mutlak hedeflere cevrilip aciliyor
   | 'round_end' // raund sonucu gösteriliyor
   | 'match_end'; // maç bitti
 
@@ -398,6 +407,60 @@ export interface KirmiziYesilState {
   compatibility: number | null; // yalniz match_end fazinda
 }
 
+export type KimDahaMuhtemelChoice = 'self' | 'partner' | 'both';
+export type KimDahaMuhtemelCategory =
+  | 'ilk_hamle'
+  | 'plan_pusulasi'
+  | 'lezzet'
+  | 'kahkaha'
+  | 'macera'
+  | 'ince_jest'
+  | 'sosyal_sahne'
+  | 'gece_modu';
+export type KimDahaMuhtemelTarget =
+  | { kind: 'player'; playerId: string }
+  | { kind: 'both' };
+export type KimDahaMuhtemelResolution =
+  | 'same_player'
+  | 'both_together'
+  | 'split'
+  | 'solo'
+  | 'skipped';
+
+export interface KimDahaMuhtemelPrompt {
+  category: KimDahaMuhtemelCategory;
+  prompt: string;
+}
+
+export interface KimDahaMuhtemelReveal {
+  round: number;
+  category: KimDahaMuhtemelCategory;
+  prompt: string;
+  targets: Record<string, KimDahaMuhtemelTarget | null>;
+  agreement: boolean;
+  consensus: KimDahaMuhtemelTarget | null;
+  resolution: KimDahaMuhtemelResolution;
+}
+
+export interface KimDahaMuhtemelState {
+  round: number; // 1..KIM_DAHA_MUHTEMEL_ROUNDS
+  category: KimDahaMuhtemelCategory;
+  prompt: string;
+  myLocked: boolean;
+  opponentLocked: boolean;
+  myChoice: KimDahaMuhtemelChoice | null; // yalniz alicinin kendi aktif oyu
+  agreements: number;
+  samePersonAgreements: number;
+  bothAgreements: number;
+  jointRounds: number;
+  splitRounds: number;
+  missedRounds: number;
+  spotlights: Record<string, number>; // yalniz same_player uzlasilarinin hedefleri
+  history: KimDahaMuhtemelReveal[];
+  reveal: KimDahaMuhtemelReveal | null;
+  agreementPct: number | null; // yalniz match_end fazinda
+}
+
 export interface PlayerPublic {
   id: string;
   nick: string;
@@ -432,6 +495,7 @@ export interface RoomSnapshot {
   randevuRuleti: RandevuRuletiState | null;
   emojiSifre: EmojiSifreState | null;
   kirmiziYesil: KirmiziYesilState | null;
+  kimDahaMuhtemel: KimDahaMuhtemelState | null;
 }
 
 // ---- Mesajlar: istemci -> sunucu ----
@@ -452,6 +516,7 @@ export type ClientMsg =
   | { t: 'emoji_sifre_code'; emojis: EmojiSifreCode; round: number } // ayni emoji birden cok kez kullanilabilir
   | { t: 'emoji_sifre_guess'; choice: number; round: number } // choice 0..3; stale tur reddedilir
   | { t: 'kirmizi_yesil_vote'; choice: KirmiziYesilChoice; round: number } // stale tur ve tekrar oy reddedilir
+  | { t: 'kim_daha_muhtemel_vote'; choice: KimDahaMuhtemelChoice; round: number } // stale tur ve tekrar oy reddedilir
   | { t: 'use_joker' } // moda özel joker (MODE_JOKER)
   | { t: 'react'; id: number } // sticker tepkisi (0..REACTION_COUNT-1), sunucu 3sn throttle uygular
   | { t: 'rematch' };

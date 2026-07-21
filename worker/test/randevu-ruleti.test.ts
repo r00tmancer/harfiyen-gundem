@@ -88,6 +88,7 @@ function stateForGame(phase: RoomState['phase'] = 'randevu_secim'): RoomState {
     },
     emojiSifre: null,
     kirmiziYesil: null,
+    kimDahaMuhtemel: null,
   };
 }
 

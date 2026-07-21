@@ -8,6 +8,9 @@ import type {
   EmojiSifreOptions,
   EmojiSifreReveal,
   GameMode,
+  KimDahaMuhtemelChoice,
+  KimDahaMuhtemelPrompt,
+  KimDahaMuhtemelReveal,
   KirmiziYesilChoice,
   KirmiziYesilReveal,
   KirmiziYesilScenario,
@@ -145,6 +148,24 @@ export interface KirmiziYesilServer {
   compatibility: number | null;
 }
 
+// Kim Daha Muhtemel?: self/partner oylar sunucuda, oy veren oyuncunun
+// kimligine gore mutlak hedefe cevrilir. Aktif rakip oyu reveal'e kadar gizlidir.
+export interface KimDahaMuhtemelServer {
+  prompts: KimDahaMuhtemelPrompt[];
+  roundIndex: number; // 0 tabanli
+  votes: Record<string, KimDahaMuhtemelChoice>;
+  agreements: number;
+  samePersonAgreements: number;
+  bothAgreements: number;
+  jointRounds: number;
+  splitRounds: number;
+  missedRounds: number;
+  spotlights: Record<string, number>;
+  history: KimDahaMuhtemelReveal[];
+  reveal: KimDahaMuhtemelReveal | null;
+  agreementPct: number | null;
+}
+
 // 7 Bom: gizli alan yok; snapshot'taki BomState ile ayni sekil.
 export interface BomServer {
   lives: Record<string, number>; // pid -> kalan can
@@ -179,6 +200,7 @@ export interface RoomState {
   randevuRuleti: RandevuRuletiServer | null;
   emojiSifre: EmojiSifreServer | null;
   kirmiziYesil: KirmiziYesilServer | null;
+  kimDahaMuhtemel: KimDahaMuhtemelServer | null;
 }
 
 // Mod isleyicilerine verilen dar baglam. GameRoom bu metotlari saglar; boylece

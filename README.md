@@ -6,6 +6,7 @@
 
 ## Oyunlar
 
+- **Kim Daha Muhtemel? — yeni:** Sekiz eğlenceli rolde gizlice kendini, partnerini veya ikinizi işaretleyin. Seçimler birlikte açılsın; yalnız ortak toplamları ve açılmış bir soruyu içeren 9:16 Story görselini paylaşın.
 - **Kırmızı mı Yeşil mi? — yeni:** Sekiz gündelik senaryoya gizlice kırmızı, duruma bağlı veya yeşil renk verin. Cevaplar birlikte açılsın; ortak radarınızı bireysel oyları göstermeyen 9:16 Story görseli olarak paylaşın.
 - **Emoji Şifre:** Dört tur boyunca sırayla kodlayıcı ve çözücü olun. Gizli kelimeyi tam üç emojiyle anlatın, dört seçenekten çözün ve açılmış mesajları 9:16 Story görseli olarak paylaşın.
 - **Randevu Ruleti:** Yemek, etkinlik ve tatlıyı gizlice seçin. Aynı seçim doğrudan plana girer; farklı seçimlerde güvenli rulet karar verir. Ortaya çıkan üç parçalı randevuyu Story görseli olarak paylaşın.
